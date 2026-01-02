@@ -436,6 +436,32 @@
             background: #e53935;
         }
 
+        .birthday-toggle {
+            background: rgba(255, 152, 0, 0.2);
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 10px;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+            vertical-align: middle;
+        }
+
+        .birthday-toggle:hover {
+            background: rgba(255, 152, 0, 0.4);
+            transform: scale(1.1);
+        }
+
+        .birthday-toggle.active {
+            background: #ff9800;
+            box-shadow: 0 2px 10px rgba(255, 152, 0, 0.4);
+        }
+
+        .birthdays.hidden {
+            display: none;
+        }
+
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -502,7 +528,7 @@
         </header>
 
         <div class="summary">
-            <h2>📊 섬김 현황</h2>
+            <h2>📊 섬김 현황 <button class="birthday-toggle" id="birthdayToggle" onclick="toggleBirthdays()">🎂</button></h2>
             <div class="summary-stats">
                 <div class="stat-card">
                     <div class="stat-number" id="totalWeeks">52</div>
@@ -734,7 +760,7 @@
             }
 
             const birthdayHTML = sunday.birthdays.length > 0 ? `
-                <div class="birthdays">
+                <div class="birthdays hidden">
                     <div class="birthdays-label">🎂 이번 주 생일</div>
                     <div class="birthdays-list">
                         ${sunday.birthdays.map(b => `<span class="birthday-item">${b.name}(${formatBirthday(b.birthday)})</span>`).join('')}
@@ -929,6 +955,25 @@
                 btn.classList.toggle('active', idx + 1 === currentMonth);
             });
         });
+
+        // 생일 표시 상태 (기본: 숨김)
+        let showBirthdays = false;
+
+        function toggleBirthdays() {
+            showBirthdays = !showBirthdays;
+            const btn = document.getElementById('birthdayToggle');
+            const birthdayElements = document.querySelectorAll('.birthdays');
+            
+            if (showBirthdays) {
+                btn.classList.add('active');
+                birthdayElements.forEach(el => el.classList.remove('hidden'));
+                showToast('생일 정보가 표시됩니다 🎂');
+            } else {
+                btn.classList.remove('active');
+                birthdayElements.forEach(el => el.classList.add('hidden'));
+                showToast('생일 정보가 숨겨졌습니다');
+            }
+        }
 
         // 초기화
         setupRealtimeListener();
