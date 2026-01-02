@@ -836,14 +836,44 @@
         }
 
         async function editServant(week) {
-            if (!confirm('정말 수정하시겠습니까?')) return;
+            const saved = servantData[String(week)];
+            if (!saved) return;
+            
+            const inputName = prompt(`삭제하려면 등록된 이름 "${saved.name}"을(를) 그대로 입력하세요:`);
+            
+            if (inputName === null) return; // 취소 누름
+            
+            if (inputName.trim() !== saved.name) {
+                showToast('이름이 일치하지 않습니다.', true);
+                return;
+            }
             
             try {
                 await db.collection('servants').doc(String(week)).delete();
-                showToast('수정 모드로 변경되었습니다.');
+                await deleteFromGoogleSheets(week);
+                showToast('삭제되었습니다.');
             } catch (error) {
                 console.error('삭제 실패:', error);
                 showToast('오류가 발생했습니다.', true);
+            }
+        }
+
+        // Google Sheets에서 삭제
+        async function deleteFromGoogleSheets(week) {
+            if (!GOOGLE_SHEETS_WEBHOOK) return;
+            
+            try {
+                await fetch(GOOGLE_SHEETS_WEBHOOK, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'delete',
+                        week: week
+                    })
+                });
+            } catch (error) {
+                console.error('Google Sheets 삭제 실패:', error);
             }
         }
 
