@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>길목교회 2026년 주일식사 섬김</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/pretendard/1.3.9/static/pretendard.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .month-nav {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            padding: 0 20px;
+        }
+
+        .month-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .month-btn:hover {
+            background: rgba(255,255,255,0.4);
+            transform: translateY(-2px);
+        }
+
+        .month-btn.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .month-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        .month-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .month-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .weeks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .week-card {
+            background: #f8f9ff;
+            border-radius: 16px;
+            padding: 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .week-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.15);
+            transform: translateY(-3px);
+        }
+
+        .week-card.has-servant {
+            background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+            border-color: #4caf50;
+        }
+
+        .week-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .week-info h3 {
+            font-size: 1.1rem;
+            color: #333;
+            font-weight: 700;
+        }
+
+        .week-date {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .week-number {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .birthdays {
+            background: #fff3e0;
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 15px;
+            border-left: 3px solid #ff9800;
+        }
+
+        .birthdays-label {
+            font-size: 0.7rem;
+            color: #e65100;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .birthdays-list {
+            font-size: 0.75rem;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .birthday-item {
+            display: inline;
+        }
+
+        .birthday-item::after {
+            content: ', ';
+        }
+
+        .birthday-item:last-child::after {
+            content: '';
+        }
+
+        .lunar-tag {
+            color: #9c27b0;
+            font-weight: 600;
+        }
+
+        .solar-convert {
+            color: #1976d2;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: #555;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .method-select {
+            display: flex;
+            gap: 10px;
+        }
+
+        .method-option {
+            flex: 1;
+            position: relative;
+        }
+
+        .method-option input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .method-label {
+            display: block;
+            padding: 12px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .method-option input:checked + .method-label {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .method-label:hover {
+            border-color: #667eea;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .save-btn:active {
+            transform: translateY(0);
+        }
+
+        .servant-display {
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+
+        .servant-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .servant-method {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .edit-btn {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            color: #4caf50;
+            border: 2px solid #4caf50;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .edit-btn:hover {
+            background: #4caf50;
+            color: white;
+        }
+
+        .summary {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        .summary h2 {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f5f7fa, #e4e8f0);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .export-btn {
+            margin-top: 20px;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .month-section {
+                padding: 20px;
+            }
+
+            .weeks-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .month-btn {
+                padding: 8px 15px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍚 길목교회 주일식사 섬김</h1>
+            <p>2026년 52주 식사 섬김 일정 등록</p>
+        </header>
+
+        <div class="summary">
+            <h2>📊 섬김 현황</h2>
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalWeeks">52</div>
+                    <div class="stat-label">전체 주일</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="filledWeeks">0</div>
+                    <div class="stat-label">등록 완료</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="remainingWeeks">52</div>
+                    <div class="stat-label">남은 주일</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="selfPrepare">0</div>
+                    <div class="stat-label">본인준비</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="churchPrepare">0</div>
+                    <div class="stat-label">교회준비</div>
+                </div>
+            </div>
+            <button class="export-btn" onclick="exportData()">📥 데이터 내보내기 (CSV)</button>
+        </div>
+
+        <nav class="month-nav">
+            <button class="month-btn active" onclick="scrollToMonth(1)">1월</button>
+            <button class="month-btn" onclick="scrollToMonth(2)">2월</button>
+            <button class="month-btn" onclick="scrollToMonth(3)">3월</button>
+            <button class="month-btn" onclick="scrollToMonth(4)">4월</button>
+            <button class="month-btn" onclick="scrollToMonth(5)">5월</button>
+            <button class="month-btn" onclick="scrollToMonth(6)">6월</button>
+            <button class="month-btn" onclick="scrollToMonth(7)">7월</button>
+            <button class="month-btn" onclick="scrollToMonth(8)">8월</button>
+            <button class="month-btn" onclick="scrollToMonth(9)">9월</button>
+            <button class="month-btn" onclick="scrollToMonth(10)">10월</button>
+            <button class="month-btn" onclick="scrollToMonth(11)">11월</button>
+            <button class="month-btn" onclick="scrollToMonth(12)">12월</button>
+        </nav>
+
+        <div id="calendar"></div>
+    </div>
+
+    <div class="toast" id="toast">저장되었습니다!</div>
+
+    <script>
+        // 2026년 주일 데이터 (생일 정보 포함 - 음력은 "음 월/일, 양 월/일" 형식)
+        const sundaysData = [
+            { week: 1, date: "2026-01-04", month: 1, day: 4, birthdays: [{ name: "천호림", birthday: "1/4" }] },
+            { week: 2, date: "2026-01-11", month: 1, day: 11, birthdays: [{ name: "이규연", birthday: "1/10" }] },
+            { week: 3, date: "2026-01-18", month: 1, day: 18, birthdays: [{ name: "제윤서", birthday: "1/16" }, { name: "김홍현", birthday: "1/17" }, { name: "추나라", birthday: "1/18" }] },
+            { week: 4, date: "2026-01-25", month: 1, day: 25, birthdays: [] },
+            { week: 5, date: "2026-02-01", month: 2, day: 1, birthdays: [] },
+            { week: 6, date: "2026-02-08", month: 2, day: 8, birthdays: [{ name: "고은호", birthday: "2/5" }] },
+            { week: 7, date: "2026-02-15", month: 2, day: 15, birthdays: [{ name: "조성찬", birthday: "2/10" }, { name: "장현주", birthday: "2/12" }, { name: "최경혜", birthday: "2/12" }, { name: "정지혜", birthday: "2/13" }, { name: "신창무", birthday: "2/13" }] },
+            { week: 8, date: "2026-02-22", month: 2, day: 22, birthdays: [{ name: "이린우", birthday: "2/17" }] },
+            { week: 9, date: "2026-03-01", month: 3, day: 1, birthdays: [{ name: "이예림", birthday: "2/25" }] },
+            { week: 10, date: "2026-03-08", month: 3, day: 8, birthdays: [{ name: "김진아", birthday: "3/3" }, { name: "김고은", birthday: "3/5" }] },
+            { week: 11, date: "2026-03-15", month: 3, day: 15, birthdays: [{ name: "권종신", birthday: "음 1/23, 양 3/11" }] },
+            { week: 12, date: "2026-03-22", month: 3, day: 22, birthdays: [{ name: "이종진", birthday: "3/22" }] },
+            { week: 13, date: "2026-03-29", month: 3, day: 29, birthdays: [{ name: "신효진", birthday: "3/26" }, { name: "심마리아", birthday: "3/27" }] },
+            { week: 14, date: "2026-04-05", month: 4, day: 5, birthdays: [{ name: "천선영", birthday: "3/31" }] },
+            { week: 15, date: "2026-04-12", month: 4, day: 12, birthdays: [{ name: "오가타 마유", birthday: "4/6" }, { name: "김나혜", birthday: "4/12" }] },
+            { week: 16, date: "2026-04-19", month: 4, day: 19, birthdays: [{ name: "김소윤", birthday: "4/16" }, { name: "이수진", birthday: "4/17" }, { name: "이길주", birthday: "음 3/3, 양 4/19" }] },
+            { week: 17, date: "2026-04-26", month: 4, day: 26, birthdays: [] },
+            { week: 18, date: "2026-05-03", month: 5, day: 3, birthdays: [] },
+            { week: 19, date: "2026-05-10", month: 5, day: 10, birthdays: [] },
+            { week: 20, date: "2026-05-17", month: 5, day: 17, birthdays: [] },
+            { week: 21, date: "2026-05-24", month: 5, day: 24, birthdays: [{ name: "신희진", birthday: "5/19" }, { name: "김하윤", birthday: "5/22" }] },
+            { week: 22, date: "2026-05-31", month: 5, day: 31, birthdays: [{ name: "김상진", birthday: "5/31" }] },
+            { week: 23, date: "2026-06-07", month: 6, day: 7, birthdays: [] },
+            { week: 24, date: "2026-06-14", month: 6, day: 14, birthdays: [{ name: "유소현", birthday: "6/9" }, { name: "김지영", birthday: "6/13" }] },
+            { week: 25, date: "2026-06-21", month: 6, day: 21, birthdays: [{ name: "천하율", birthday: "6/15" }, { name: "이춘원", birthday: "6/17" }] },
+            { week: 26, date: "2026-06-28", month: 6, day: 28, birthdays: [{ name: "장천", birthday: "6/24" }, { name: "천사랑", birthday: "6/27" }] },
+            { week: 27, date: "2026-07-05", month: 7, day: 5, birthdays: [{ name: "이채우", birthday: "6/30" }] },
+            { week: 28, date: "2026-07-12", month: 7, day: 12, birthdays: [] },
+            { week: 29, date: "2026-07-19", month: 7, day: 19, birthdays: [{ name: "이건명", birthday: "7/17" }] },
+            { week: 30, date: "2026-07-26", month: 7, day: 26, birthdays: [] },
+            { week: 31, date: "2026-08-02", month: 8, day: 2, birthdays: [{ name: "추하늘", birthday: "7/29" }, { name: "여성은", birthday: "7/30" }] },
+            { week: 32, date: "2026-08-09", month: 8, day: 9, birthdays: [] },
+            { week: 33, date: "2026-08-16", month: 8, day: 16, birthdays: [] },
+            { week: 34, date: "2026-08-23", month: 8, day: 23, birthdays: [{ name: "김지영", birthday: "음 7/10, 양 8/22" }] },
+            { week: 35, date: "2026-08-30", month: 8, day: 30, birthdays: [{ name: "제영서", birthday: "8/24" }, { name: "전정민", birthday: "8/26" }, { name: "조성권", birthday: "8/29" }] },
+            { week: 36, date: "2026-09-06", month: 9, day: 6, birthdays: [] },
+            { week: 37, date: "2026-09-13", month: 9, day: 13, birthdays: [] },
+            { week: 38, date: "2026-09-20", month: 9, day: 20, birthdays: [{ name: "이성동", birthday: "9/17" }] },
+            { week: 39, date: "2026-09-27", month: 9, day: 27, birthdays: [] },
+            { week: 40, date: "2026-10-04", month: 10, day: 4, birthdays: [] },
+            { week: 41, date: "2026-10-11", month: 10, day: 11, birthdays: [{ name: "박사무엘", birthday: "10/5" }, { name: "추미유키", birthday: "10/11" }] },
+            { week: 42, date: "2026-10-18", month: 10, day: 18, birthdays: [{ name: "안성진", birthday: "10/15" }, { name: "엄다나", birthday: "10/15" }] },
+            { week: 43, date: "2026-10-25", month: 10, day: 25, birthdays: [{ name: "김다윤", birthday: "10/22" }] },
+            { week: 44, date: "2026-11-01", month: 11, day: 1, birthdays: [] },
+            { week: 45, date: "2026-11-08", month: 11, day: 8, birthdays: [] },
+            { week: 46, date: "2026-11-15", month: 11, day: 15, birthdays: [] },
+            { week: 47, date: "2026-11-22", month: 11, day: 22, birthdays: [{ name: "김현정", birthday: "11/19" }, { name: "이진형", birthday: "11/22" }] },
+            { week: 48, date: "2026-11-29", month: 11, day: 29, birthdays: [{ name: "이도연", birthday: "11/24" }, { name: "김태현", birthday: "11/27" }] },
+            { week: 49, date: "2026-12-06", month: 12, day: 6, birthdays: [{ name: "추대식", birthday: "12/1" }] },
+            { week: 50, date: "2026-12-13", month: 12, day: 13, birthdays: [{ name: "김점순", birthday: "음 11/3, 양 12/11" }] },
+            { week: 51, date: "2026-12-20", month: 12, day: 20, birthdays: [] },
+            { week: 52, date: "2026-12-27", month: 12, day: 27, birthdays: [] }
+        ];
+
+        const monthNames = ['', '1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+
+        // 저장된 데이터 로드
+        let servantData = JSON.parse(localStorage.getItem('gilmokServants') || '{}');
+
+        function renderCalendar() {
+            const container = document.getElementById('calendar');
+            container.innerHTML = '';
+
+            // 월별로 그룹화
+            const monthGroups = {};
+            sundaysData.forEach(sunday => {
+                if (!monthGroups[sunday.month]) {
+                    monthGroups[sunday.month] = [];
+                }
+                monthGroups[sunday.month].push(sunday);
+            });
+
+            // 각 월 렌더링
+            Object.keys(monthGroups).forEach(month => {
+                const section = document.createElement('div');
+                section.className = 'month-section';
+                section.id = `month-${month}`;
+
+                const monthIcon = ['🌸', '❄️', '🌷', '🌼', '🌺', '☀️', '🌻', '🌴', '🍂', '🎃', '🍁', '🎄'][month - 1];
+
+                section.innerHTML = `
+                    <h2 class="month-title">
+                        <span class="month-icon">${monthIcon}</span>
+                        ${monthNames[month]}
+                    </h2>
+                    <div class="weeks-grid" id="weeks-${month}"></div>
+                `;
+
+                container.appendChild(section);
+
+                const weeksGrid = section.querySelector(`#weeks-${month}`);
+                monthGroups[month].forEach(sunday => {
+                    weeksGrid.appendChild(createWeekCard(sunday));
+                });
+            });
+
+            updateStats();
+        }
+
+        function formatBirthday(birthday) {
+            // 음력인 경우: "음 1/23, 양 3/11" 형식
+            if (birthday.startsWith('음 ')) {
+                const parts = birthday.split(', ');
+                const lunar = parts[0]; // "음 1/23"
+                const solar = parts[1]; // "양 3/11"
+                return `<span class="lunar-tag">${lunar}</span>, <span class="solar-convert">${solar}</span>`;
+            }
+            return birthday;
+        }
+
+        function createWeekCard(sunday) {
+            const card = document.createElement('div');
+            card.className = 'week-card';
+            card.id = `week-${sunday.week}`;
+
+            const saved = servantData[sunday.week];
+            if (saved) {
+                card.classList.add('has-servant');
+            }
+
+            const birthdayHTML = sunday.birthdays.length > 0 ? `
+                <div class="birthdays">
+                    <div class="birthdays-label">🎂 이번 주 생일</div>
+                    <div class="birthdays-list">
+                        ${sunday.birthdays.map(b => `<span class="birthday-item">${b.name}(${formatBirthday(b.birthday)})</span>`).join('')}
+                    </div>
+                </div>
+            ` : '';
+
+            if (saved) {
+                card.innerHTML = `
+                    <div class="week-header">
+                        <div class="week-info">
+                            <h3>${sunday.month}월 ${sunday.day}일 주일</h3>
+                            <div class="week-date">${sunday.date}</div>
+                        </div>
+                        <span class="week-number">${sunday.week}주</span>
+                    </div>
+                    ${birthdayHTML}
+                    <div class="servant-display">
+                        <div class="servant-name">👤 ${saved.name}</div>
+                        <div class="servant-method">${saved.method === 'self' ? '📦 본인준비' : '🏠 교회에서준비'}</div>
+                    </div>
+                    <button class="edit-btn" onclick="editServant(${sunday.week})">수정하기</button>
+                `;
+            } else {
+                card.innerHTML = `
+                    <div class="week-header">
+                        <div class="week-info">
+                            <h3>${sunday.month}월 ${sunday.day}일 주일</h3>
+                            <div class="week-date">${sunday.date}</div>
+                        </div>
+                        <span class="week-number">${sunday.week}주</span>
+                    </div>
+                    ${birthdayHTML}
+                    <div class="form-group">
+                        <label>섬기는 분 이름</label>
+                        <input type="text" id="name-${sunday.week}" placeholder="이름을 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label>섬김 방법</label>
+                        <div class="method-select">
+                            <div class="method-option">
+                                <input type="radio" name="method-${sunday.week}" id="self-${sunday.week}" value="self">
+                                <label class="method-label" for="self-${sunday.week}">📦 본인준비</label>
+                            </div>
+                            <div class="method-option">
+                                <input type="radio" name="method-${sunday.week}" id="church-${sunday.week}" value="church">
+                                <label class="method-label" for="church-${sunday.week}">🏠 교회준비</label>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="save-btn" onclick="saveServant(${sunday.week})">등록하기</button>
+                `;
+            }
+
+            return card;
+        }
+
+        function saveServant(week) {
+            const nameInput = document.getElementById(`name-${week}`);
+            const name = nameInput.value.trim();
+            
+            const selfRadio = document.getElementById(`self-${week}`);
+            const churchRadio = document.getElementById(`church-${week}`);
+            
+            if (!name) {
+                showToast('이름을 입력해주세요!');
+                nameInput.focus();
+                return;
+            }
+
+            if (!selfRadio.checked && !churchRadio.checked) {
+                showToast('섬김 방법을 선택해주세요!');
+                return;
+            }
+
+            const method = selfRadio.checked ? 'self' : 'church';
+
+            servantData[week] = { name, method };
+            localStorage.setItem('gilmokServants', JSON.stringify(servantData));
+
+            // 해당 카드만 다시 렌더링
+            const sunday = sundaysData.find(s => s.week === week);
+            const oldCard = document.getElementById(`week-${week}`);
+            const newCard = createWeekCard(sunday);
+            oldCard.replaceWith(newCard);
+
+            updateStats();
+            showToast('등록되었습니다! 🙏');
+        }
+
+        function editServant(week) {
+            delete servantData[week];
+            localStorage.setItem('gilmokServants', JSON.stringify(servantData));
+
+            const sunday = sundaysData.find(s => s.week === week);
+            const oldCard = document.getElementById(`week-${week}`);
+            const newCard = createWeekCard(sunday);
+            oldCard.replaceWith(newCard);
+
+            updateStats();
+        }
+
+        function updateStats() {
+            const filled = Object.keys(servantData).length;
+            const selfCount = Object.values(servantData).filter(s => s.method === 'self').length;
+            const churchCount = Object.values(servantData).filter(s => s.method === 'church').length;
+
+            document.getElementById('filledWeeks').textContent = filled;
+            document.getElementById('remainingWeeks').textContent = 52 - filled;
+            document.getElementById('selfPrepare').textContent = selfCount;
+            document.getElementById('churchPrepare').textContent = churchCount;
+        }
+
+        function scrollToMonth(month) {
+            const element = document.getElementById(`month-${month}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            // 버튼 활성화 상태 변경
+            document.querySelectorAll('.month-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx + 1 === month);
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function exportData() {
+            let csv = '주차,날짜,섬기는 분,섬김 방법,생일자\n';
+            
+            sundaysData.forEach(sunday => {
+                const saved = servantData[sunday.week] || {};
+                const birthdayNames = sunday.birthdays.map(b => `${b.name}(${b.birthday})`).join(' / ');
+                csv += `${sunday.week},${sunday.date},${saved.name || ''},${saved.method === 'self' ? '본인준비' : saved.method === 'church' ? '교회준비' : ''},${birthdayNames}\n`;
+            });
+
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '길목교회_2026년_주일식사섬김.csv';
+            link.click();
+
+            showToast('CSV 파일이 다운로드됩니다! 📥');
+        }
+
+        // 초기 렌더링
+        renderCalendar();
+
+        // 스크롤 시 월 버튼 활성화 상태 변경
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('.month-section');
+            let currentMonth = 1;
+
+            sections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                if (rect.top <= 200) {
+                    currentMonth = parseInt(section.id.split('-')[1]);
+                }
+            });
+
+            document.querySelectorAll('.month-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx + 1 === currentMonth);
+            });
+        });
+    </script>
+</body>
+</html>
