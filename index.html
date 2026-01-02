@@ -42,6 +42,30 @@
             opacity: 0.9;
         }
 
+        .sync-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+        }
+
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         .month-nav {
             display: flex;
             justify-content: center;
@@ -296,6 +320,12 @@
             transform: translateY(0);
         }
 
+        .save-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .servant-display {
             background: linear-gradient(135deg, #4caf50, #66bb6a);
             color: white;
@@ -313,6 +343,12 @@
         .servant-method {
             font-size: 0.85rem;
             opacity: 0.9;
+        }
+
+        .servant-time {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-top: 5px;
         }
 
         .edit-btn {
@@ -376,25 +412,6 @@
             margin-top: 5px;
         }
 
-        .export-btn {
-            margin-top: 20px;
-            padding: 15px 30px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .export-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-
         .toast {
             position: fixed;
             bottom: 30px;
@@ -413,6 +430,40 @@
         .toast.show {
             transform: translateX(-50%) translateY(0);
             opacity: 1;
+        }
+
+        .toast.error {
+            background: #e53935;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e0e0e0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
         }
 
         @media (max-width: 768px) {
@@ -436,10 +487,18 @@
     </style>
 </head>
 <body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
     <div class="container">
         <header>
             <h1>🍚 길목교회 주일식사 섬김</h1>
             <p>2026년 52주 식사 섬김 일정 등록</p>
+            <div class="sync-status">
+                <div class="sync-dot"></div>
+                <span>실시간 동기화 중</span>
+            </div>
         </header>
 
         <div class="summary">
@@ -466,7 +525,6 @@
                     <div class="stat-label">교회준비</div>
                 </div>
             </div>
-            <button class="export-btn" onclick="exportData()">📥 데이터 내보내기 (CSV)</button>
         </div>
 
         <nav class="month-nav">
@@ -489,8 +547,29 @@
 
     <div class="toast" id="toast">저장되었습니다!</div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <script>
-        // 2026년 주일 데이터 (생일 정보 포함 - 음력은 "음 월/일, 양 월/일" 형식)
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyA1899QZwBAgLmi2fU1QzR5cVVYWpDlpvo",
+            authDomain: "gilmok-meal.firebaseapp.com",
+            projectId: "gilmok-meal",
+            storageBucket: "gilmok-meal.firebasestorage.app",
+            messagingSenderId: "761772428630",
+            appId: "1:761772428630:web:e1afaebb343dfea2381af7"
+        };
+
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Google Sheets 웹앱 URL (나중에 설정)
+        const GOOGLE_SHEETS_WEBHOOK = null; // Google Apps Script 배포 후 URL 입력
+
+        // 2026년 주일 데이터
         const sundaysData = [
             { week: 1, date: "2026-01-04", month: 1, day: 4, birthdays: [{ name: "천호림", birthday: "1/4" }] },
             { week: 2, date: "2026-01-11", month: 1, day: 11, birthdays: [{ name: "이규연", birthday: "1/10" }] },
@@ -548,14 +627,52 @@
 
         const monthNames = ['', '1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
 
-        // 저장된 데이터 로드
-        let servantData = JSON.parse(localStorage.getItem('gilmokServants') || '{}');
+        // 섬김 데이터 (Firebase에서 로드)
+        let servantData = {};
+
+        // Firebase 실시간 리스너 설정
+        function setupRealtimeListener() {
+            db.collection('servants').onSnapshot((snapshot) => {
+                servantData = {};
+                snapshot.forEach((doc) => {
+                    servantData[doc.id] = doc.data();
+                });
+                renderCalendar();
+                hideLoading();
+            }, (error) => {
+                console.error("Firebase 에러:", error);
+                showToast('데이터 로드 실패', true);
+                hideLoading();
+            });
+        }
+
+        // Google Sheets에 동기화
+        async function syncToGoogleSheets(week, data) {
+            if (!GOOGLE_SHEETS_WEBHOOK) return;
+            
+            try {
+                const sunday = sundaysData.find(s => s.week === parseInt(week));
+                await fetch(GOOGLE_SHEETS_WEBHOOK, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        week: week,
+                        date: sunday.date,
+                        name: data.name,
+                        method: data.method === 'self' ? '본인준비' : '교회준비',
+                        timestamp: new Date().toISOString()
+                    })
+                });
+            } catch (error) {
+                console.error('Google Sheets 동기화 실패:', error);
+            }
+        }
 
         function renderCalendar() {
             const container = document.getElementById('calendar');
             container.innerHTML = '';
 
-            // 월별로 그룹화
             const monthGroups = {};
             sundaysData.forEach(sunday => {
                 if (!monthGroups[sunday.month]) {
@@ -564,7 +681,6 @@
                 monthGroups[sunday.month].push(sunday);
             });
 
-            // 각 월 렌더링
             Object.keys(monthGroups).forEach(month => {
                 const section = document.createElement('div');
                 section.className = 'month-section';
@@ -592,14 +708,19 @@
         }
 
         function formatBirthday(birthday) {
-            // 음력인 경우: "음 1/23, 양 3/11" 형식
             if (birthday.startsWith('음 ')) {
                 const parts = birthday.split(', ');
-                const lunar = parts[0]; // "음 1/23"
-                const solar = parts[1]; // "양 3/11"
+                const lunar = parts[0];
+                const solar = parts[1];
                 return `<span class="lunar-tag">${lunar}</span>, <span class="solar-convert">${solar}</span>`;
             }
             return birthday;
+        }
+
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return '';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')} 등록`;
         }
 
         function createWeekCard(sunday) {
@@ -607,7 +728,7 @@
             card.className = 'week-card';
             card.id = `week-${sunday.week}`;
 
-            const saved = servantData[sunday.week];
+            const saved = servantData[String(sunday.week)];
             if (saved) {
                 card.classList.add('has-servant');
             }
@@ -634,6 +755,7 @@
                     <div class="servant-display">
                         <div class="servant-name">👤 ${saved.name}</div>
                         <div class="servant-method">${saved.method === 'self' ? '📦 본인준비' : '🏠 교회에서준비'}</div>
+                        <div class="servant-time">${formatTimestamp(saved.timestamp)}</div>
                     </div>
                     <button class="edit-btn" onclick="editServant(${sunday.week})">수정하기</button>
                 `;
@@ -671,7 +793,7 @@
             return card;
         }
 
-        function saveServant(week) {
+        async function saveServant(week) {
             const nameInput = document.getElementById(`name-${week}`);
             const name = nameInput.value.trim();
             
@@ -679,41 +801,50 @@
             const churchRadio = document.getElementById(`church-${week}`);
             
             if (!name) {
-                showToast('이름을 입력해주세요!');
+                showToast('이름을 입력해주세요!', true);
                 nameInput.focus();
                 return;
             }
 
             if (!selfRadio.checked && !churchRadio.checked) {
-                showToast('섬김 방법을 선택해주세요!');
+                showToast('섬김 방법을 선택해주세요!', true);
                 return;
             }
 
             const method = selfRadio.checked ? 'self' : 'church';
+            const data = { 
+                name, 
+                method, 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+            };
 
-            servantData[week] = { name, method };
-            localStorage.setItem('gilmokServants', JSON.stringify(servantData));
+            // 버튼 비활성화
+            const btn = document.querySelector(`#week-${week} .save-btn`);
+            btn.disabled = true;
+            btn.textContent = '저장 중...';
 
-            // 해당 카드만 다시 렌더링
-            const sunday = sundaysData.find(s => s.week === week);
-            const oldCard = document.getElementById(`week-${week}`);
-            const newCard = createWeekCard(sunday);
-            oldCard.replaceWith(newCard);
-
-            updateStats();
-            showToast('등록되었습니다! 🙏');
+            try {
+                await db.collection('servants').doc(String(week)).set(data);
+                await syncToGoogleSheets(week, data);
+                showToast('등록되었습니다! 🙏');
+            } catch (error) {
+                console.error('저장 실패:', error);
+                showToast('저장 실패. 다시 시도해주세요.', true);
+                btn.disabled = false;
+                btn.textContent = '등록하기';
+            }
         }
 
-        function editServant(week) {
-            delete servantData[week];
-            localStorage.setItem('gilmokServants', JSON.stringify(servantData));
-
-            const sunday = sundaysData.find(s => s.week === week);
-            const oldCard = document.getElementById(`week-${week}`);
-            const newCard = createWeekCard(sunday);
-            oldCard.replaceWith(newCard);
-
-            updateStats();
+        async function editServant(week) {
+            if (!confirm('정말 수정하시겠습니까?')) return;
+            
+            try {
+                await db.collection('servants').doc(String(week)).delete();
+                showToast('수정 모드로 변경되었습니다.');
+            } catch (error) {
+                console.error('삭제 실패:', error);
+                showToast('오류가 발생했습니다.', true);
+            }
         }
 
         function updateStats() {
@@ -733,43 +864,26 @@
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
 
-            // 버튼 활성화 상태 변경
             document.querySelectorAll('.month-btn').forEach((btn, idx) => {
                 btn.classList.toggle('active', idx + 1 === month);
             });
         }
 
-        function showToast(message) {
+        function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
+            toast.classList.toggle('error', isError);
             toast.classList.add('show');
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 2000);
         }
 
-        function exportData() {
-            let csv = '주차,날짜,섬기는 분,섬김 방법,생일자\n';
-            
-            sundaysData.forEach(sunday => {
-                const saved = servantData[sunday.week] || {};
-                const birthdayNames = sunday.birthdays.map(b => `${b.name}(${b.birthday})`).join(' / ');
-                csv += `${sunday.week},${sunday.date},${saved.name || ''},${saved.method === 'self' ? '본인준비' : saved.method === 'church' ? '교회준비' : ''},${birthdayNames}\n`;
-            });
-
-            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = '길목교회_2026년_주일식사섬김.csv';
-            link.click();
-
-            showToast('CSV 파일이 다운로드됩니다! 📥');
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
         }
 
-        // 초기 렌더링
-        renderCalendar();
-
-        // 스크롤 시 월 버튼 활성화 상태 변경
+        // 스크롤 시 월 버튼 활성화
         window.addEventListener('scroll', () => {
             const sections = document.querySelectorAll('.month-section');
             let currentMonth = 1;
@@ -785,6 +899,9 @@
                 btn.classList.toggle('active', idx + 1 === currentMonth);
             });
         });
+
+        // 초기화
+        setupRealtimeListener();
     </script>
 </body>
 </html>
