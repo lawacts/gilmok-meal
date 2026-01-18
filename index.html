@@ -492,6 +492,124 @@
             display: none !important;
         }
 
+        /* 교회준비 안내 모달 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-info {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            line-height: 1.8;
+            font-size: 0.95rem;
+            color: #444;
+        }
+
+        .modal-info .highlight {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .modal-info .account {
+            background: #e8f5e9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #2e7d32;
+            font-weight: 500;
+        }
+
+        .modal-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 20px;
+        }
+
+        .modal-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-textarea::placeholder {
+            color: #aaa;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn.cancel {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .modal-btn.cancel:hover {
+            background: #e0e0e0;
+        }
+
+        .modal-btn.confirm {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .modal-btn.confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
         @media (max-width: 768px) {
             header h1 {
                 font-size: 1.8rem;
@@ -508,6 +626,10 @@
             .month-btn {
                 padding: 8px 15px;
                 font-size: 0.85rem;
+            }
+
+            .modal-content {
+                padding: 20px;
             }
         }
     </style>
@@ -572,6 +694,27 @@
     </div>
 
     <div class="toast" id="toast">저장되었습니다!</div>
+
+    <!-- 교회준비 안내 모달 -->
+    <div class="modal-overlay hidden" id="churchModal">
+        <div class="modal-content">
+            <div class="modal-title">🏠 교회에서 준비 안내</div>
+            <div class="modal-info">
+                교회에서 준비를 하게 되면 대략 <span class="highlight">30만원</span> 정도가 듭니다.<br><br>
+                교회통장으로 <span class="highlight">토요일까지</span> 보내주시거나 주일에 오셔서 헌금으로 내주셔도 됩니다.<br><br>
+                보통은 선식당에서 밥과 여러메뉴로 준비하는데 특별히 준비하길 원하시는 부분이 있으면 아래에 적어주십시오.
+                <div class="account">
+                    📌 대한예수교장로회 길목교회<br>
+                    신한 140-013701830
+                </div>
+            </div>
+            <textarea class="modal-textarea" id="churchNote" placeholder="특별히 요청하실 사항이 있으면 적어주세요. (선택사항)"></textarea>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeChurchModal(false)">취소</button>
+                <button class="modal-btn confirm" onclick="closeChurchModal(true)">확인</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -687,11 +830,35 @@
                         date: sunday.date,
                         name: data.name,
                         method: data.method === 'self' ? '본인준비' : '교회준비',
+                        note: data.note || '',
                         timestamp: new Date().toISOString()
                     })
                 });
             } catch (error) {
                 console.error('Google Sheets 동기화 실패:', error);
+            }
+        }
+
+        // 교회준비 모달 관련
+        let modalResolve = null;
+
+        function showChurchPrepareModal() {
+            return new Promise((resolve) => {
+                modalResolve = resolve;
+                document.getElementById('churchNote').value = '';
+                document.getElementById('churchModal').classList.remove('hidden');
+            });
+        }
+
+        function closeChurchModal(confirmed) {
+            const modal = document.getElementById('churchModal');
+            modal.classList.add('hidden');
+            
+            if (confirmed) {
+                const note = document.getElementById('churchNote').value.trim();
+                modalResolve(note);
+            } else {
+                modalResolve(null);
             }
         }
 
@@ -838,9 +1005,21 @@
             }
 
             const method = selfRadio.checked ? 'self' : 'church';
+            let note = '';
+            
+            // 교회준비 선택시 안내문 모달 표시
+            if (method === 'church') {
+                note = await showChurchPrepareModal();
+                if (note === null) {
+                    // 취소됨
+                    return;
+                }
+            }
+            
             const data = { 
                 name, 
-                method, 
+                method,
+                note: note || '',
                 timestamp: firebase.firestore.FieldValue.serverTimestamp() 
             };
 
