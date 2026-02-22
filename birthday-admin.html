@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>길목교회 생일 관리</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/pretendard/1.3.9/static/pretendard.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            color: white;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .login-box {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            margin: 50px auto;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .login-box h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .main-content {
+            display: none;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        .card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            color: #333;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            color: #555;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ff5252;
+            color: white;
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .birthday-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .birthday-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .birthday-item:hover {
+            background: #f0f2ff;
+        }
+
+        .birthday-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .birthday-date {
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .birthday-type {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .lunar-badge {
+            background: #9c27b0;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+        }
+
+        .solar-badge {
+            background: #2196f3;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .export-btn {
+            margin-top: 20px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: #ff5252;
+        }
+
+        .toast.success {
+            background: #4caf50;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .birthday-item {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎂 길목교회 생일 관리</h1>
+            <p>생일 데이터를 추가, 수정, 삭제할 수 있습니다</p>
+        </header>
+
+        <!-- 로그인 화면 -->
+        <div class="login-box" id="loginBox">
+            <h2>🔐 관리자 로그인</h2>
+            <input type="password" id="passwordInput" placeholder="비밀번호 입력" onkeypress="if(event.key==='Enter') login()">
+            <button onclick="login()">로그인</button>
+        </div>
+
+        <!-- 메인 컨텐츠 -->
+        <div class="main-content" id="mainContent">
+            <!-- 통계 -->
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-number" id="totalCount">0</div>
+                    <div class="stat-label">전체 생일자</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="solarCount">0</div>
+                    <div class="stat-label">양력</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="lunarCount">0</div>
+                    <div class="stat-label">음력</div>
+                </div>
+            </div>
+
+            <!-- 생일 추가 -->
+            <div class="card">
+                <h2>➕ 새 생일 추가</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>이름</label>
+                        <input type="text" id="newName" placeholder="홍길동">
+                    </div>
+                    <div class="form-group">
+                        <label>생일 (월-일)</label>
+                        <input type="text" id="newBirthday" placeholder="03-15">
+                    </div>
+                    <div class="form-group">
+                        <label>양력/음력</label>
+                        <select id="newType">
+                            <option value="solar">양력</option>
+                            <option value="lunar">음력</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="addBirthday()">추가</button>
+                </div>
+            </div>
+
+            <!-- 생일 목록 -->
+            <div class="card">
+                <h2>📋 생일 목록</h2>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="이름으로 검색..." oninput="filterList()">
+                </div>
+                <div class="birthday-list" id="birthdayList">
+                    <!-- 동적으로 생성 -->
+                </div>
+                <button class="btn btn-success export-btn" onclick="exportCode()">📥 코드로 내보내기</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase 설정 (기존 gilmok-meal 프로젝트 사용)
+        const firebaseConfig = {
+            apiKey: "AIzaSyA1899QZwBAgLmi2fU1QzR5cVVYWpDlpvo",
+            authDomain: "gilmok-meal.firebaseapp.com",
+            projectId: "gilmok-meal",
+            storageBucket: "gilmok-meal.firebasestorage.app",
+            messagingSenderId: "761772428630",
+            appId: "1:761772428630:web:e1afaebb343dfea2381af7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 관리자 비밀번호 (변경 가능)
+        const ADMIN_PASSWORD = "gilmok2026";
+
+        let birthdayData = [];
+
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                loadBirthdays();
+            } else {
+                showToast('비밀번호가 틀렸습니다.', 'error');
+            }
+        }
+
+        async function loadBirthdays() {
+            try {
+                const snapshot = await db.collection('birthdays').orderBy('month').orderBy('day').get();
+                birthdayData = [];
+                snapshot.forEach(doc => {
+                    birthdayData.push({ id: doc.id, ...doc.data() });
+                });
+                renderList();
+                updateStats();
+            } catch (error) {
+                console.error('로드 실패:', error);
+                showToast('데이터 로드 실패', 'error');
+            }
+        }
+
+        function renderList(filter = '') {
+            const list = document.getElementById('birthdayList');
+            const filtered = birthdayData.filter(b => 
+                b.name.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            list.innerHTML = filtered.map(b => `
+                <div class="birthday-item">
+                    <div class="birthday-name">${b.name}</div>
+                    <div class="birthday-date">${b.month}월 ${b.day}일</div>
+                    <div class="birthday-type">
+                        <span class="${b.type === 'lunar' ? 'lunar-badge' : 'solar-badge'}">
+                            ${b.type === 'lunar' ? '음력' : '양력'}
+                        </span>
+                    </div>
+                    <button class="btn btn-danger" onclick="deleteBirthday('${b.id}', '${b.name}')">삭제</button>
+                </div>
+            `).join('');
+        }
+
+        function filterList() {
+            const filter = document.getElementById('searchInput').value;
+            renderList(filter);
+        }
+
+        function updateStats() {
+            document.getElementById('totalCount').textContent = birthdayData.length;
+            document.getElementById('solarCount').textContent = birthdayData.filter(b => b.type === 'solar').length;
+            document.getElementById('lunarCount').textContent = birthdayData.filter(b => b.type === 'lunar').length;
+        }
+
+        async function addBirthday() {
+            const name = document.getElementById('newName').value.trim();
+            const birthday = document.getElementById('newBirthday').value.trim();
+            const type = document.getElementById('newType').value;
+
+            if (!name || !birthday) {
+                showToast('이름과 생일을 입력하세요.', 'error');
+                return;
+            }
+
+            const parts = birthday.split('-');
+            if (parts.length !== 2) {
+                showToast('생일 형식: MM-DD (예: 03-15)', 'error');
+                return;
+            }
+
+            const month = parseInt(parts[0]);
+            const day = parseInt(parts[1]);
+
+            if (month < 1 || month > 12 || day < 1 || day > 31) {
+                showToast('올바른 날짜를 입력하세요.', 'error');
+                return;
+            }
+
+            try {
+                await db.collection('birthdays').add({
+                    name,
+                    month,
+                    day,
+                    type
+                });
+
+                document.getElementById('newName').value = '';
+                document.getElementById('newBirthday').value = '';
+                
+                showToast(`${name}님 생일이 추가되었습니다.`, 'success');
+                loadBirthdays();
+            } catch (error) {
+                console.error('추가 실패:', error);
+                showToast('추가 실패', 'error');
+            }
+        }
+
+        async function deleteBirthday(id, name) {
+            if (!confirm(`${name}님의 생일 정보를 삭제하시겠습니까?`)) {
+                return;
+            }
+
+            try {
+                await db.collection('birthdays').doc(id).delete();
+                showToast(`${name}님 생일이 삭제되었습니다.`, 'success');
+                loadBirthdays();
+            } catch (error) {
+                console.error('삭제 실패:', error);
+                showToast('삭제 실패', 'error');
+            }
+        }
+
+        // 2026년 주일 데이터
+        const SUNDAYS_2026 = [
+            { week: 1, date: "2026-01-04", month: 1, day: 4 },
+            { week: 2, date: "2026-01-11", month: 1, day: 11 },
+            { week: 3, date: "2026-01-18", month: 1, day: 18 },
+            { week: 4, date: "2026-01-25", month: 1, day: 25 },
+            { week: 5, date: "2026-02-01", month: 2, day: 1 },
+            { week: 6, date: "2026-02-08", month: 2, day: 8 },
+            { week: 7, date: "2026-02-15", month: 2, day: 15 },
+            { week: 8, date: "2026-02-22", month: 2, day: 22 },
+            { week: 9, date: "2026-03-01", month: 3, day: 1 },
+            { week: 10, date: "2026-03-08", month: 3, day: 8 },
+            { week: 11, date: "2026-03-15", month: 3, day: 15 },
+            { week: 12, date: "2026-03-22", month: 3, day: 22 },
+            { week: 13, date: "2026-03-29", month: 3, day: 29 },
+            { week: 14, date: "2026-04-05", month: 4, day: 5 },
+            { week: 15, date: "2026-04-12", month: 4, day: 12 },
+            { week: 16, date: "2026-04-19", month: 4, day: 19 },
+            { week: 17, date: "2026-04-26", month: 4, day: 26 },
+            { week: 18, date: "2026-05-03", month: 5, day: 3 },
+            { week: 19, date: "2026-05-10", month: 5, day: 10 },
+            { week: 20, date: "2026-05-17", month: 5, day: 17 },
+            { week: 21, date: "2026-05-24", month: 5, day: 24 },
+            { week: 22, date: "2026-05-31", month: 5, day: 31 },
+            { week: 23, date: "2026-06-07", month: 6, day: 7 },
+            { week: 24, date: "2026-06-14", month: 6, day: 14 },
+            { week: 25, date: "2026-06-21", month: 6, day: 21 },
+            { week: 26, date: "2026-06-28", month: 6, day: 28 },
+            { week: 27, date: "2026-07-05", month: 7, day: 5 },
+            { week: 28, date: "2026-07-12", month: 7, day: 12 },
+            { week: 29, date: "2026-07-19", month: 7, day: 19 },
+            { week: 30, date: "2026-07-26", month: 7, day: 26 },
+            { week: 31, date: "2026-08-02", month: 8, day: 2 },
+            { week: 32, date: "2026-08-09", month: 8, day: 9 },
+            { week: 33, date: "2026-08-16", month: 8, day: 16 },
+            { week: 34, date: "2026-08-23", month: 8, day: 23 },
+            { week: 35, date: "2026-08-30", month: 8, day: 30 },
+            { week: 36, date: "2026-09-06", month: 9, day: 6 },
+            { week: 37, date: "2026-09-13", month: 9, day: 13 },
+            { week: 38, date: "2026-09-20", month: 9, day: 20 },
+            { week: 39, date: "2026-09-27", month: 9, day: 27 },
+            { week: 40, date: "2026-10-04", month: 10, day: 4 },
+            { week: 41, date: "2026-10-11", month: 10, day: 11 },
+            { week: 42, date: "2026-10-18", month: 10, day: 18 },
+            { week: 43, date: "2026-10-25", month: 10, day: 25 },
+            { week: 44, date: "2026-11-01", month: 11, day: 1 },
+            { week: 45, date: "2026-11-08", month: 11, day: 8 },
+            { week: 46, date: "2026-11-15", month: 11, day: 15 },
+            { week: 47, date: "2026-11-22", month: 11, day: 22 },
+            { week: 48, date: "2026-11-29", month: 11, day: 29 },
+            { week: 49, date: "2026-12-06", month: 12, day: 6 },
+            { week: 50, date: "2026-12-13", month: 12, day: 13 },
+            { week: 51, date: "2026-12-20", month: 12, day: 20 },
+            { week: 52, date: "2026-12-27", month: 12, day: 27 }
+        ];
+
+        // 음력 → 양력 변환 (2026년)
+        const LUNAR_TO_SOLAR_2026 = {
+            "1-23": { month: 3, day: 11 },
+            "3-3": { month: 4, day: 19 },
+            "7-10": { month: 8, day: 22 },
+            "11-3": { month: 12, day: 11 }
+        };
+
+        function getSolarDate(birthday) {
+            if (birthday.type === 'solar') {
+                return { month: birthday.month, day: birthday.day };
+            }
+            
+            const key = `${birthday.month}-${birthday.day}`;
+            if (LUNAR_TO_SOLAR_2026[key]) {
+                return LUNAR_TO_SOLAR_2026[key];
+            }
+            
+            // 변환 데이터 없으면 대략 +1달로 추정
+            return { month: birthday.month + 1, day: birthday.day };
+        }
+
+        function findSundayForBirthday(birthday) {
+            const solar = getSolarDate(birthday);
+            const birthdayDate = new Date(2026, solar.month - 1, solar.day);
+            
+            // 생일 전 일요일 찾기
+            for (let i = SUNDAYS_2026.length - 1; i >= 0; i--) {
+                const sunday = SUNDAYS_2026[i];
+                const sundayDate = new Date(2026, sunday.month - 1, sunday.day);
+                
+                if (sundayDate <= birthdayDate) {
+                    return sunday;
+                }
+            }
+            
+            return SUNDAYS_2026[0]; // 1월 첫째 주
+        }
+
+        function getDayOfWeek(month, day) {
+            const date = new Date(2026, month - 1, day);
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            return days[date.getDay()];
+        }
+
+        function exportCode() {
+            // 주차별로 생일자 그룹화
+            const weekBirthdays = {};
+            
+            birthdayData.forEach(birthday => {
+                const sunday = findSundayForBirthday(birthday);
+                const solar = getSolarDate(birthday);
+                const dayOfWeek = getDayOfWeek(solar.month, solar.day);
+                
+                let birthdayStr = `${solar.month}/${solar.day}(${dayOfWeek})`;
+                if (birthday.type === 'lunar') {
+                    birthdayStr = `음 ${birthday.month}/${birthday.day}, ${solar.month}/${solar.day}(${dayOfWeek})`;
+                }
+                
+                if (!weekBirthdays[sunday.week]) {
+                    weekBirthdays[sunday.week] = [];
+                }
+                
+                weekBirthdays[sunday.week].push({
+                    name: birthday.name,
+                    birthday: birthdayStr
+                });
+            });
+
+            // 코드 생성
+            let code = 'const sundaysData = [\n';
+            
+            SUNDAYS_2026.forEach(sunday => {
+                const birthdays = weekBirthdays[sunday.week] || [];
+                const birthdaysJson = JSON.stringify(birthdays.map(b => ({
+                    name: b.name,
+                    birthday: b.birthday
+                })));
+                
+                code += `    { week: ${sunday.week}, date: "${sunday.date}", month: ${sunday.month}, day: ${sunday.day}, birthdays: ${birthdaysJson} },\n`;
+            });
+            
+            code += '];';
+
+            // 복사용 텍스트 영역 표시
+            const textarea = document.createElement('textarea');
+            textarea.value = code;
+            textarea.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:60%;z-index:9999;padding:20px;font-family:monospace;font-size:12px;';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            showToast('코드가 생성되었습니다. Ctrl+C로 복사하세요!', 'success');
+            
+            textarea.addEventListener('blur', () => {
+                document.body.removeChild(textarea);
+            });
+        }
+
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
