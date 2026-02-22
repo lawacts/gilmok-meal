@@ -352,7 +352,7 @@
                 <div class="birthday-list" id="birthdayList">
                     <!-- 동적으로 생성 -->
                 </div>
-                <button class="btn btn-success export-btn" onclick="exportCode()">📥 코드로 내보내기</button>
+                <button class="btn btn-primary export-btn" onclick="uploadInitialData()">📤 초기 데이터 업로드</button>
             </div>
         </div>
     </div>
@@ -362,6 +362,9 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Korean Lunar Calendar -->
+    <script src="https://cdn.jsdelivr.net/npm/korean-lunar-calendar/dist/korean-lunar-calendar.min.js"></script>
 
     <script>
         // Firebase 설정 (기존 gilmok-meal 프로젝트 사용)
@@ -381,6 +384,69 @@
         const ADMIN_PASSWORD = "gilmok2026";
 
         let birthdayData = [];
+
+        // 기존 생일 데이터 (초기 업로드용)
+        const INITIAL_BIRTHDAYS = [
+            { name: "천호림", month: 1, day: 4, type: "solar" },
+            { name: "이규연", month: 1, day: 10, type: "solar" },
+            { name: "권세진", month: 1, day: 14, type: "solar" },
+            { name: "제윤서", month: 1, day: 16, type: "solar" },
+            { name: "김홍현", month: 1, day: 17, type: "solar" },
+            { name: "추나라", month: 1, day: 18, type: "solar" },
+            { name: "고은호", month: 2, day: 5, type: "solar" },
+            { name: "조성찬", month: 2, day: 10, type: "solar" },
+            { name: "장현주", month: 2, day: 12, type: "solar" },
+            { name: "최경혜", month: 2, day: 12, type: "solar" },
+            { name: "정지혜", month: 2, day: 13, type: "solar" },
+            { name: "신창무", month: 2, day: 13, type: "solar" },
+            { name: "이린우", month: 2, day: 17, type: "solar" },
+            { name: "이예림", month: 2, day: 25, type: "solar" },
+            { name: "김진아", month: 3, day: 3, type: "solar" },
+            { name: "김고은", month: 3, day: 5, type: "solar" },
+            { name: "권종신", month: 1, day: 23, type: "lunar" },
+            { name: "구연주", month: 3, day: 15, type: "solar" },
+            { name: "권다희", month: 3, day: 21, type: "solar" },
+            { name: "이종진", month: 3, day: 22, type: "solar" },
+            { name: "신효진", month: 3, day: 26, type: "solar" },
+            { name: "심마리아", month: 3, day: 27, type: "solar" },
+            { name: "천선영", month: 3, day: 31, type: "solar" },
+            { name: "오가타 마유", month: 4, day: 6, type: "solar" },
+            { name: "김나혜", month: 4, day: 12, type: "solar" },
+            { name: "김소윤", month: 4, day: 16, type: "solar" },
+            { name: "이수진", month: 4, day: 17, type: "solar" },
+            { name: "이길주", month: 3, day: 3, type: "lunar" },
+            { name: "신희진", month: 5, day: 19, type: "solar" },
+            { name: "김하윤", month: 5, day: 22, type: "solar" },
+            { name: "김상진", month: 5, day: 31, type: "solar" },
+            { name: "유소현", month: 6, day: 9, type: "solar" },
+            { name: "김지영", month: 6, day: 13, type: "solar" },
+            { name: "천하율", month: 6, day: 15, type: "solar" },
+            { name: "이춘원", month: 6, day: 17, type: "solar" },
+            { name: "장천", month: 6, day: 24, type: "solar" },
+            { name: "천사랑", month: 6, day: 27, type: "solar" },
+            { name: "이채우", month: 6, day: 30, type: "solar" },
+            { name: "이건명", month: 7, day: 17, type: "solar" },
+            { name: "추하늘", month: 7, day: 29, type: "solar" },
+            { name: "여성은", month: 7, day: 30, type: "solar" },
+            { name: "권준희", month: 8, day: 5, type: "solar" },
+            { name: "권찬희", month: 8, day: 21, type: "solar" },
+            { name: "김지영B", month: 7, day: 10, type: "lunar" },
+            { name: "제영서", month: 8, day: 24, type: "solar" },
+            { name: "전정민", month: 8, day: 26, type: "solar" },
+            { name: "조성권", month: 8, day: 29, type: "solar" },
+            { name: "이성동", month: 9, day: 17, type: "solar" },
+            { name: "박사무엘", month: 10, day: 5, type: "solar" },
+            { name: "추미유키", month: 10, day: 11, type: "solar" },
+            { name: "안성진", month: 10, day: 15, type: "solar" },
+            { name: "엄다나", month: 10, day: 15, type: "solar" },
+            { name: "김다윤", month: 10, day: 22, type: "solar" },
+            { name: "김현정", month: 11, day: 19, type: "solar" },
+            { name: "이진형", month: 11, day: 22, type: "solar" },
+            { name: "이도연", month: 11, day: 24, type: "solar" },
+            { name: "김태현", month: 11, day: 27, type: "solar" },
+            { name: "추대식", month: 12, day: 1, type: "solar" },
+            { name: "김점순", month: 11, day: 3, type: "lunar" }
+        ];
 
         function login() {
             const password = document.getElementById('passwordInput').value;
@@ -554,25 +620,25 @@
         ];
 
         // 음력 → 양력 변환 (2026년)
-        const LUNAR_TO_SOLAR_2026 = {
-            "1-23": { month: 3, day: 11 },
-            "3-3": { month: 4, day: 19 },
-            "7-10": { month: 8, day: 22 },
-            "11-3": { month: 12, day: 11 }
-        };
-
+        // 음력을 양력으로 변환 (korean-lunar-calendar 라이브러리 사용)
         function getSolarDate(birthday) {
             if (birthday.type === 'solar') {
                 return { month: birthday.month, day: birthday.day };
             }
             
-            const key = `${birthday.month}-${birthday.day}`;
-            if (LUNAR_TO_SOLAR_2026[key]) {
-                return LUNAR_TO_SOLAR_2026[key];
+            // 음력 -> 양력 변환
+            try {
+                const calendar = new KoreanLunarCalendar();
+                calendar.setLunarDate(2026, birthday.month, birthday.day, false);
+                const solar = calendar.getSolarCalendar();
+                return { month: solar.month, day: solar.day };
+            } catch (e) {
+                console.error('음력 변환 실패:', e);
+                // 실패시 대략 +1달로 추정
+                let newMonth = birthday.month + 1;
+                if (newMonth > 12) newMonth = 1;
+                return { month: newMonth, day: birthday.day };
             }
-            
-            // 변환 데이터 없으면 대략 +1달로 추정
-            return { month: birthday.month + 1, day: birthday.day };
         }
 
         function findSundayForBirthday(birthday) {
@@ -658,6 +724,30 @@
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 2500);
+        }
+
+        async function uploadInitialData() {
+            if (!confirm('기존 데이터를 모두 삭제하고 초기 데이터를 업로드하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                // 기존 데이터 삭제
+                const snapshot = await db.collection('birthdays').get();
+                const deletePromises = snapshot.docs.map(doc => doc.ref.delete());
+                await Promise.all(deletePromises);
+
+                // 초기 데이터 업로드
+                for (const birthday of INITIAL_BIRTHDAYS) {
+                    await db.collection('birthdays').add(birthday);
+                }
+
+                showToast(`${INITIAL_BIRTHDAYS.length}명의 생일 데이터가 업로드되었습니다.`, 'success');
+                loadBirthdays();
+            } catch (error) {
+                console.error('업로드 실패:', error);
+                showToast('업로드 실패', 'error');
+            }
         }
     </script>
 </body>
