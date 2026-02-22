@@ -999,6 +999,9 @@
             });
 
             updateStats();
+            
+            // 저장된 생일 표시 상태 적용
+            applyBirthdayVisibility();
         }
 
         function formatBirthday(birthday) {
@@ -1236,22 +1239,31 @@
             });
         });
 
-        // 생일 표시 상태 (기본: 숨김)
-        let showBirthdays = false;
+        // 생일 표시 상태 (localStorage에서 불러오기)
+        let showBirthdays = localStorage.getItem('showBirthdays') === 'true';
 
         function toggleBirthdays() {
             showBirthdays = !showBirthdays;
+            localStorage.setItem('showBirthdays', showBirthdays);
+            applyBirthdayVisibility();
+            
+            if (showBirthdays) {
+                showToast('생일 정보가 표시됩니다 🎂');
+            } else {
+                showToast('생일 정보가 숨겨졌습니다');
+            }
+        }
+
+        function applyBirthdayVisibility() {
             const btn = document.getElementById('birthdayToggle');
             const birthdayElements = document.querySelectorAll('.birthdays');
             
             if (showBirthdays) {
                 btn.classList.add('active');
                 birthdayElements.forEach(el => el.classList.remove('hidden'));
-                showToast('생일 정보가 표시됩니다 🎂');
             } else {
                 btn.classList.remove('active');
                 birthdayElements.forEach(el => el.classList.add('hidden'));
-                showToast('생일 정보가 숨겨졌습니다');
             }
         }
 
