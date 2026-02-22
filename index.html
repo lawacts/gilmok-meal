@@ -721,6 +721,9 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Korean Lunar Calendar -->
+    <script src="https://cdn.jsdelivr.net/npm/korean-lunar-calendar/dist/korean-lunar-calendar.min.js"></script>
 
     <script>
         // Firebase 설정
@@ -740,69 +743,165 @@
         // Google Sheets 웹앱 URL
         const GOOGLE_SHEETS_WEBHOOK = "https://script.google.com/macros/s/AKfycbxT65CMVPV2S4Wxk_9vWCWHVCHmI29FLXX-8Zcm661NAZ7hGxH3WKBlBwteA93hgJQwGQ/exec";
 
-        // 2026년 주일 데이터 (생일: 전주일에 미리 표시, 요일 포함, 날짜순 정렬)
+        // 2026년 주일 데이터 (생일은 Firebase에서 불러옴)
         const sundaysData = [
-            { week: 1, date: "2026-01-04", month: 1, day: 4, birthdays: [{"name": "천호림", "birthday": "1/4(일)"}, {"name": "이규연", "birthday": "1/10(토)"}] },
-            { week: 2, date: "2026-01-11", month: 1, day: 11, birthdays: [{"name": "권세진", "birthday": "1/14(수)"}, {"name": "제윤서", "birthday": "1/16(금)"}, {"name": "김홍현", "birthday": "1/17(토)"}] },
-            { week: 3, date: "2026-01-18", month: 1, day: 18, birthdays: [{"name": "추나라", "birthday": "1/18(일)"}] },
+            { week: 1, date: "2026-01-04", month: 1, day: 4, birthdays: [] },
+            { week: 2, date: "2026-01-11", month: 1, day: 11, birthdays: [] },
+            { week: 3, date: "2026-01-18", month: 1, day: 18, birthdays: [] },
             { week: 4, date: "2026-01-25", month: 1, day: 25, birthdays: [] },
-            { week: 5, date: "2026-02-01", month: 2, day: 1, birthdays: [{"name": "고은호", "birthday": "2/5(목)"}] },
-            { week: 6, date: "2026-02-08", month: 2, day: 8, birthdays: [{"name": "조성찬", "birthday": "2/10(화)"}, {"name": "장현주", "birthday": "2/12(목)"}, {"name": "최경혜", "birthday": "2/12(목)"}, {"name": "정지혜", "birthday": "2/13(금)"}, {"name": "신창무", "birthday": "2/13(금)"}] },
-            { week: 7, date: "2026-02-15", month: 2, day: 15, birthdays: [{"name": "이린우", "birthday": "2/17(화)"}] },
-            { week: 8, date: "2026-02-22", month: 2, day: 22, birthdays: [{"name": "이예림", "birthday": "2/25(수)"}] },
-            { week: 9, date: "2026-03-01", month: 3, day: 1, birthdays: [{"name": "김진아", "birthday": "3/3(화)"}, {"name": "김고은", "birthday": "3/5(목)"}] },
-            { week: 10, date: "2026-03-08", month: 3, day: 8, birthdays: [{"name": "권종신", "birthday": "음 1/23, 3/11(수)"}] },
-            { week: 11, date: "2026-03-15", month: 3, day: 15, birthdays: [{"name": "구연주", "birthday": "3/15(일)"}, {"name": "권다희", "birthday": "3/21(토)"}] },
-            { week: 12, date: "2026-03-22", month: 3, day: 22, birthdays: [{"name": "이종진", "birthday": "3/22(일)"}, {"name": "신효진", "birthday": "3/26(목)"}, {"name": "심마리아", "birthday": "3/27(금)"}] },
-            { week: 13, date: "2026-03-29", month: 3, day: 29, birthdays: [{"name": "천선영", "birthday": "3/31(화)"}] },
-            { week: 14, date: "2026-04-05", month: 4, day: 5, birthdays: [{"name": "오가타 마유", "birthday": "4/6(월)"}] },
-            { week: 15, date: "2026-04-12", month: 4, day: 12, birthdays: [{"name": "김나혜", "birthday": "4/12(일)"}, {"name": "김소윤", "birthday": "4/16(목)"}, {"name": "이수진", "birthday": "4/17(금)"}] },
-            { week: 16, date: "2026-04-19", month: 4, day: 19, birthdays: [{"name": "이길주", "birthday": "음 3/3, 4/19(일)"}] },
+            { week: 5, date: "2026-02-01", month: 2, day: 1, birthdays: [] },
+            { week: 6, date: "2026-02-08", month: 2, day: 8, birthdays: [] },
+            { week: 7, date: "2026-02-15", month: 2, day: 15, birthdays: [] },
+            { week: 8, date: "2026-02-22", month: 2, day: 22, birthdays: [] },
+            { week: 9, date: "2026-03-01", month: 3, day: 1, birthdays: [] },
+            { week: 10, date: "2026-03-08", month: 3, day: 8, birthdays: [] },
+            { week: 11, date: "2026-03-15", month: 3, day: 15, birthdays: [] },
+            { week: 12, date: "2026-03-22", month: 3, day: 22, birthdays: [] },
+            { week: 13, date: "2026-03-29", month: 3, day: 29, birthdays: [] },
+            { week: 14, date: "2026-04-05", month: 4, day: 5, birthdays: [] },
+            { week: 15, date: "2026-04-12", month: 4, day: 12, birthdays: [] },
+            { week: 16, date: "2026-04-19", month: 4, day: 19, birthdays: [] },
             { week: 17, date: "2026-04-26", month: 4, day: 26, birthdays: [] },
             { week: 18, date: "2026-05-03", month: 5, day: 3, birthdays: [] },
             { week: 19, date: "2026-05-10", month: 5, day: 10, birthdays: [] },
-            { week: 20, date: "2026-05-17", month: 5, day: 17, birthdays: [{"name": "신희진", "birthday": "5/19(화)"}, {"name": "김하윤", "birthday": "5/22(금)"}] },
+            { week: 20, date: "2026-05-17", month: 5, day: 17, birthdays: [] },
             { week: 21, date: "2026-05-24", month: 5, day: 24, birthdays: [] },
-            { week: 22, date: "2026-05-31", month: 5, day: 31, birthdays: [{"name": "김상진", "birthday": "5/31(일)"}] },
-            { week: 23, date: "2026-06-07", month: 6, day: 7, birthdays: [{"name": "유소현", "birthday": "6/9(화)"}, {"name": "김지영", "birthday": "6/13(토)"}] },
-            { week: 24, date: "2026-06-14", month: 6, day: 14, birthdays: [{"name": "천하율", "birthday": "6/15(월)"}, {"name": "이춘원", "birthday": "6/17(수)"}] },
-            { week: 25, date: "2026-06-21", month: 6, day: 21, birthdays: [{"name": "장천", "birthday": "6/24(수)"}, {"name": "천사랑", "birthday": "6/27(토)"}] },
-            { week: 26, date: "2026-06-28", month: 6, day: 28, birthdays: [{"name": "이채우", "birthday": "6/30(화)"}] },
+            { week: 22, date: "2026-05-31", month: 5, day: 31, birthdays: [] },
+            { week: 23, date: "2026-06-07", month: 6, day: 7, birthdays: [] },
+            { week: 24, date: "2026-06-14", month: 6, day: 14, birthdays: [] },
+            { week: 25, date: "2026-06-21", month: 6, day: 21, birthdays: [] },
+            { week: 26, date: "2026-06-28", month: 6, day: 28, birthdays: [] },
             { week: 27, date: "2026-07-05", month: 7, day: 5, birthdays: [] },
-            { week: 28, date: "2026-07-12", month: 7, day: 12, birthdays: [{"name": "이건명", "birthday": "7/17(금)"}] },
+            { week: 28, date: "2026-07-12", month: 7, day: 12, birthdays: [] },
             { week: 29, date: "2026-07-19", month: 7, day: 19, birthdays: [] },
-            { week: 30, date: "2026-07-26", month: 7, day: 26, birthdays: [{"name": "추하늘", "birthday": "7/29(수)"}, {"name": "여성은", "birthday": "7/30(목)"}] },
-            { week: 31, date: "2026-08-02", month: 8, day: 2, birthdays: [{"name": "권준희", "birthday": "8/5(수)"}] },
+            { week: 30, date: "2026-07-26", month: 7, day: 26, birthdays: [] },
+            { week: 31, date: "2026-08-02", month: 8, day: 2, birthdays: [] },
             { week: 32, date: "2026-08-09", month: 8, day: 9, birthdays: [] },
-            { week: 33, date: "2026-08-16", month: 8, day: 16, birthdays: [{"name": "권찬희", "birthday": "8/21(금)"}, {"name": "김지영", "birthday": "음 7/10, 8/22(토)"}] },
-            { week: 34, date: "2026-08-23", month: 8, day: 23, birthdays: [{"name": "제영서", "birthday": "8/24(월)"}, {"name": "전정민", "birthday": "8/26(수)"}, {"name": "조성권", "birthday": "8/29(토)"}] },
+            { week: 33, date: "2026-08-16", month: 8, day: 16, birthdays: [] },
+            { week: 34, date: "2026-08-23", month: 8, day: 23, birthdays: [] },
             { week: 35, date: "2026-08-30", month: 8, day: 30, birthdays: [] },
             { week: 36, date: "2026-09-06", month: 9, day: 6, birthdays: [] },
-            { week: 37, date: "2026-09-13", month: 9, day: 13, birthdays: [{"name": "이성동", "birthday": "9/17(목)"}] },
+            { week: 37, date: "2026-09-13", month: 9, day: 13, birthdays: [] },
             { week: 38, date: "2026-09-20", month: 9, day: 20, birthdays: [] },
             { week: 39, date: "2026-09-27", month: 9, day: 27, birthdays: [] },
-            { week: 40, date: "2026-10-04", month: 10, day: 4, birthdays: [{"name": "박사무엘", "birthday": "10/5(월)"}] },
-            { week: 41, date: "2026-10-11", month: 10, day: 11, birthdays: [{"name": "추미유키", "birthday": "10/11(일)"}, {"name": "안성진", "birthday": "10/15(목)"}, {"name": "엄다나", "birthday": "10/15(목)"}] },
-            { week: 42, date: "2026-10-18", month: 10, day: 18, birthdays: [{"name": "김다윤", "birthday": "10/22(목)"}] },
+            { week: 40, date: "2026-10-04", month: 10, day: 4, birthdays: [] },
+            { week: 41, date: "2026-10-11", month: 10, day: 11, birthdays: [] },
+            { week: 42, date: "2026-10-18", month: 10, day: 18, birthdays: [] },
             { week: 43, date: "2026-10-25", month: 10, day: 25, birthdays: [] },
             { week: 44, date: "2026-11-01", month: 11, day: 1, birthdays: [] },
             { week: 45, date: "2026-11-08", month: 11, day: 8, birthdays: [] },
-            { week: 46, date: "2026-11-15", month: 11, day: 15, birthdays: [{"name": "김현정", "birthday": "11/19(목)"}] },
-            { week: 47, date: "2026-11-22", month: 11, day: 22, birthdays: [{"name": "이진형", "birthday": "11/22(일)"}, {"name": "이도연", "birthday": "11/24(화)"}, {"name": "김태현", "birthday": "11/27(금)"}] },
-            { week: 48, date: "2026-11-29", month: 11, day: 29, birthdays: [{"name": "추대식", "birthday": "12/1(화)"}] },
-            { week: 49, date: "2026-12-06", month: 12, day: 6, birthdays: [{"name": "김점순", "birthday": "음 11/3, 12/11(금)"}] },
+            { week: 46, date: "2026-11-15", month: 11, day: 15, birthdays: [] },
+            { week: 47, date: "2026-11-22", month: 11, day: 22, birthdays: [] },
+            { week: 48, date: "2026-11-29", month: 11, day: 29, birthdays: [] },
+            { week: 49, date: "2026-12-06", month: 12, day: 6, birthdays: [] },
             { week: 50, date: "2026-12-13", month: 12, day: 13, birthdays: [] },
             { week: 51, date: "2026-12-20", month: 12, day: 20, birthdays: [] },
             { week: 52, date: "2026-12-27", month: 12, day: 27, birthdays: [] }
         ];
+
+        // 음력을 양력으로 변환 (korean-lunar-calendar 라이브러리 사용)
+        function getSolarDate(birthday) {
+            if (birthday.type === 'solar') {
+                return { month: birthday.month, day: birthday.day };
+            }
+            
+            // 음력 -> 양력 변환
+            try {
+                const calendar = new KoreanLunarCalendar();
+                calendar.setLunarDate(2026, birthday.month, birthday.day, false);
+                const solar = calendar.getSolarCalendar();
+                return { month: solar.month, day: solar.day };
+            } catch (e) {
+                console.error('음력 변환 실패:', e);
+                // 실패시 대략 +1달로 추정
+                let newMonth = birthday.month + 1;
+                if (newMonth > 12) newMonth = 1;
+                return { month: newMonth, day: birthday.day };
+            }
+        }
 
         const monthNames = ['', '1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
 
         // 섬김 데이터 (Firebase에서 로드)
         let servantData = {};
 
+        // 요일 구하기
+        function getDayOfWeek(month, day) {
+            const date = new Date(2026, month - 1, day);
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            return days[date.getDay()];
+        }
+
+        // 생일에 해당하는 주일 찾기 (생일 전 일요일)
+        function findSundayForBirthday(birthday) {
+            const solar = getSolarDate(birthday);
+            const birthdayDate = new Date(2026, solar.month - 1, solar.day);
+            
+            for (let i = sundaysData.length - 1; i >= 0; i--) {
+                const sunday = sundaysData[i];
+                const sundayDate = new Date(2026, sunday.month - 1, sunday.day);
+                if (sundayDate <= birthdayDate) {
+                    return sunday.week;
+                }
+            }
+            return 1;
+        }
+
+        // Firebase에서 생일 데이터 불러와서 sundaysData에 반영
+        async function loadBirthdaysFromFirebase() {
+            try {
+                const snapshot = await db.collection('birthdays').get();
+                
+                // 기존 생일 데이터 초기화
+                sundaysData.forEach(s => s.birthdays = []);
+                
+                snapshot.forEach(doc => {
+                    const birthday = doc.data();
+                    const weekNum = findSundayForBirthday(birthday);
+                    const solar = getSolarDate(birthday);
+                    const dayOfWeek = getDayOfWeek(solar.month, solar.day);
+                    
+                    let birthdayStr = `${solar.month}/${solar.day}(${dayOfWeek})`;
+                    if (birthday.type === 'lunar') {
+                        birthdayStr = `음 ${birthday.month}/${birthday.day}, ${solar.month}/${solar.day}(${dayOfWeek})`;
+                    }
+                    
+                    const sunday = sundaysData.find(s => s.week === weekNum);
+                    if (sunday) {
+                        sunday.birthdays.push({
+                            name: birthday.name,
+                            birthday: birthdayStr
+                        });
+                    }
+                });
+                
+                // 각 주의 생일자를 날짜순 정렬
+                sundaysData.forEach(sunday => {
+                    sunday.birthdays.sort((a, b) => {
+                        const dateA = a.birthday.match(/(\d+)\/(\d+)/);
+                        const dateB = b.birthday.match(/(\d+)\/(\d+)/);
+                        if (dateA && dateB) {
+                            const monthA = parseInt(dateA[1]);
+                            const dayA = parseInt(dateA[2]);
+                            const monthB = parseInt(dateB[1]);
+                            const dayB = parseInt(dateB[2]);
+                            if (monthA !== monthB) return monthA - monthB;
+                            return dayA - dayB;
+                        }
+                        return 0;
+                    });
+                });
+                
+            } catch (error) {
+                console.error('생일 데이터 로드 실패:', error);
+            }
+        }
+
         // Firebase 실시간 리스너 설정
-        function setupRealtimeListener() {
+        async function setupRealtimeListener() {
+            // 먼저 생일 데이터 로드
+            await loadBirthdaysFromFirebase();
+            
             db.collection('servants').onSnapshot((snapshot) => {
                 servantData = {};
                 snapshot.forEach((doc) => {
