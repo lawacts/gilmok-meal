@@ -220,6 +220,27 @@
             content: '';
         }
 
+        .birthday-delete-btn {
+            background: rgba(244, 67, 54, 0.12);
+            border: none;
+            color: #e53935;
+            font-size: 0.7rem;
+            cursor: pointer;
+            padding: 1px 5px;
+            border-radius: 4px;
+            margin-left: 4px;
+            line-height: 1.2;
+            font-weight: 700;
+            font-family: inherit;
+            vertical-align: middle;
+            transition: all 0.2s ease;
+        }
+
+        .birthday-delete-btn:hover {
+            background: rgba(244, 67, 54, 0.3);
+            transform: scale(1.15);
+        }
+
         .lunar-tag {
             color: #9c27b0;
             font-weight: 600;
@@ -1050,7 +1071,13 @@
                 <div class="birthdays hidden">
                     <div class="birthdays-label">🎂 이번 주 생일</div>
                     <div class="birthdays-list">
-                        ${sunday.birthdays.map(b => `<span class="birthday-item">${b.name}(${formatBirthday(b.birthday)})</span>`).join('')}
+                        ${sunday.birthdays.map(b => {
+                            const escName = (b.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                            const deleteBtn = b.id
+                                ? `<button class="birthday-delete-btn" onclick="deleteBirthday('${b.id}', '${escName}')" title="삭제">✕</button>`
+                                : '';
+                            return `<span class="birthday-item">${b.name}(${formatBirthday(b.birthday)})${deleteBtn}</span>`;
+                        }).join('')}
                     </div>
                 </div>
             ` : '';
@@ -1391,7 +1418,7 @@
                 const targetSunday = findSundayWeekForDate(solarMonth, solarDay, year);
                 const found = merged.find(s => s.week === targetSunday.week);
                 if (found) {
-                    found.birthdays.push({ name: eb.name, birthday: birthdayStr });
+                    found.birthdays.push({ id: eb.id, name: eb.name, birthday: birthdayStr });
                 }
             }
 
@@ -1428,6 +1455,23 @@
         // 생일 추가 모달 닫기
         function closeAddBirthdayModal() {
             document.getElementById('addBirthdayModal').classList.add('hidden');
+        }
+
+        // 생일 삭제 (이름 재입력 확인 후)
+        async function deleteBirthday(id, name) {
+            const inputName = prompt(`삭제하려면 "${name}"을(를) 그대로 입력하세요:`);
+            if (inputName === null) return; // 취소
+            if (inputName.trim() !== name) {
+                showToast('이름이 일치하지 않습니다.', true);
+                return;
+            }
+            try {
+                await db.collection('birthdays').doc(id).delete();
+                showToast('생일이 삭제되었습니다.');
+            } catch (error) {
+                console.error('생일 삭제 실패:', error);
+                showToast('삭제 실패. 다시 시도해주세요.', true);
+            }
         }
 
         // 생일 저장
