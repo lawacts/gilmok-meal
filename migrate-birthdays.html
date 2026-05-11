@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>길목교회 생일자 마이그레이션 (일회성)</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/pretendard/1.3.9/static/pretendard.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            color: white;
+        }
+        header h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 10px; }
+        header p { font-size: 0.95rem; opacity: 0.9; }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .login-form { max-width: 350px; margin: 30px auto; }
+        .login-form input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            font-family: inherit;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn.danger { background: linear-gradient(135deg, #f44336, #c62828); }
+        .btn.success { background: linear-gradient(135deg, #4caf50, #2e7d32); }
+        .main-content { display: none; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat {
+            background: linear-gradient(135deg, #f5f7fa, #e4e8f0);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-num { font-size: 1.5rem; font-weight: 800; color: #667eea; }
+        .stat-label { font-size: 0.8rem; color: #666; margin-top: 4px; }
+        .list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 12px;
+            background: #fafbff;
+            margin-bottom: 15px;
+        }
+        .item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item:last-child { border-bottom: none; }
+        .item .name { font-weight: 600; }
+        .item .meta { color: #666; font-size: 0.85rem; }
+        .item.lunar .meta { color: #ff9800; }
+        .item.duplicate { background: #fff3cd; }
+        .item.duplicate .name::before { content: '⚠️ '; }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #856404;
+        }
+        .info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #1565c0;
+        }
+        .success-msg {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: #2e7d32;
+            font-weight: 600;
+            line-height: 1.7;
+        }
+        .progress {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.error { background: #e53935; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔄 생일자 데이터 마이그레이션</h1>
+            <p>하드코딩된 생일자 → Firebase 자동 변환 (일회성)</p>
+        </header>
+
+        <!-- 로그인 -->
+        <div class="card" id="loginCard">
+            <h2>🔐 관리자 인증</h2>
+            <div class="login-form">
+                <input type="password" id="passwordInput" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter') login()">
+                <button class="btn" onclick="login()">로그인</button>
+            </div>
+        </div>
+
+        <!-- 메인 -->
+        <div class="main-content" id="mainContent">
+            <div class="card">
+                <h2>📊 마이그레이션 분석</h2>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-num" id="totalCount">0</div>
+                        <div class="stat-label">전체 대상</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-num" id="solarCount">0</div>
+                        <div class="stat-label">양력</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-num" id="lunarCount">0</div>
+                        <div class="stat-label">음력</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-num" id="existingCount">0</div>
+                        <div class="stat-label">기존 (중복)</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-num" id="newCount">0</div>
+                        <div class="stat-label">새로 추가</div>
+                    </div>
+                </div>
+
+                <div class="info">
+                    💡 <strong>중복 체크 기준:</strong> Firebase에 동일한 이름·월·일·음양력 구분이 모두 같은 데이터가 이미 있으면 건너뜁니다.
+                </div>
+            </div>
+
+            <div class="card" id="listCard">
+                <h2>📋 마이그레이션 목록</h2>
+                <div class="list" id="birthdayList"></div>
+            </div>
+
+            <div class="card">
+                <h2>🚀 실행</h2>
+                <div class="warning" id="warning">
+                    ⚠️ <strong>이 작업은 한 번만 실행하세요.</strong><br>
+                    완료 후에는 index.html의 하드코딩 데이터를 비워야 중복이 안 생깁니다 (별도 작업).
+                </div>
+                <button class="btn success" id="migrateBtn" onclick="runMigration()">📤 마이그레이션 시작</button>
+                <div class="progress" id="progressContainer" style="display:none;">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div id="migrationStatus" style="margin-top:10px; font-size:0.9rem; color:#666;"></div>
+            </div>
+
+            <div class="card" id="completeCard" style="display:none;">
+                <h2>✅ 완료</h2>
+                <div class="success-msg" id="completeMsg"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase 설정 (index.html과 동일)
+        const firebaseConfig = {
+            apiKey: "AIzaSyA1899QZwBAgLmi2fU1QzR5cVVYWpDlpvo",
+            authDomain: "gilmok-meal.firebaseapp.com",
+            projectId: "gilmok-meal",
+            storageBucket: "gilmok-meal.firebasestorage.app",
+            messagingSenderId: "761772428630",
+            appId: "1:761772428630:web:e1afaebb343dfea2381af7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 마이그레이션 대상 데이터 (index.html의 sundaysData에서 추출)
+        const MIGRATION_DATA = [
+            { name: "천호림", month: 1, day: 4, isLunar: false },
+            { name: "이규연", month: 1, day: 10, isLunar: false },
+            { name: "권세진", month: 1, day: 14, isLunar: false },
+            { name: "제윤서", month: 1, day: 16, isLunar: false },
+            { name: "김홍현", month: 1, day: 17, isLunar: false },
+            { name: "추나라", month: 1, day: 18, isLunar: false },
+            { name: "고은호", month: 2, day: 5, isLunar: false },
+            { name: "조성찬", month: 2, day: 10, isLunar: false },
+            { name: "장현주", month: 2, day: 12, isLunar: false },
+            { name: "최경혜", month: 2, day: 12, isLunar: false },
+            { name: "정지혜", month: 2, day: 13, isLunar: false },
+            { name: "신창무", month: 2, day: 13, isLunar: false },
+            { name: "이린우", month: 2, day: 17, isLunar: false },
+            { name: "이예림", month: 2, day: 25, isLunar: false },
+            { name: "김진아", month: 3, day: 3, isLunar: false },
+            { name: "김고은", month: 3, day: 5, isLunar: false },
+            { name: "권종신", month: 1, day: 23, isLunar: true },
+            { name: "구연주", month: 3, day: 15, isLunar: false },
+            { name: "권다희", month: 3, day: 21, isLunar: false },
+            { name: "이종진", month: 3, day: 22, isLunar: false },
+            { name: "신효진", month: 3, day: 26, isLunar: false },
+            { name: "심마리아", month: 3, day: 27, isLunar: false },
+            { name: "천선영", month: 3, day: 31, isLunar: false },
+            { name: "오가타 마유", month: 4, day: 6, isLunar: false },
+            { name: "김나혜", month: 4, day: 12, isLunar: false },
+            { name: "김소윤", month: 4, day: 16, isLunar: false },
+            { name: "이수진", month: 4, day: 17, isLunar: false },
+            { name: "이길주", month: 3, day: 3, isLunar: true },
+            { name: "신희진", month: 5, day: 19, isLunar: false },
+            { name: "김하윤", month: 5, day: 22, isLunar: false },
+            { name: "김상진", month: 5, day: 31, isLunar: false },
+            { name: "유소현", month: 6, day: 9, isLunar: false },
+            { name: "김지영", month: 6, day: 13, isLunar: false },
+            { name: "천하율", month: 6, day: 15, isLunar: false },
+            { name: "이춘원", month: 6, day: 17, isLunar: false },
+            { name: "장천", month: 6, day: 24, isLunar: false },
+            { name: "천사랑", month: 6, day: 27, isLunar: false },
+            { name: "이채우", month: 6, day: 30, isLunar: false },
+            { name: "이건명", month: 7, day: 17, isLunar: false },
+            { name: "추하늘", month: 7, day: 29, isLunar: false },
+            { name: "여성은", month: 7, day: 30, isLunar: false },
+            { name: "권준희", month: 8, day: 5, isLunar: false },
+            { name: "권찬희", month: 8, day: 21, isLunar: false },
+            { name: "김지영", month: 7, day: 10, isLunar: true },
+            { name: "제영서", month: 8, day: 24, isLunar: false },
+            { name: "전정민", month: 8, day: 26, isLunar: false },
+            { name: "조성권", month: 8, day: 29, isLunar: false },
+            { name: "이성동", month: 9, day: 17, isLunar: false },
+            { name: "박사무엘", month: 10, day: 5, isLunar: false },
+            { name: "추미유키", month: 10, day: 11, isLunar: false },
+            { name: "안성진", month: 10, day: 15, isLunar: false },
+            { name: "엄다나", month: 10, day: 15, isLunar: false },
+            { name: "김다윤", month: 10, day: 22, isLunar: false },
+            { name: "김현정", month: 11, day: 19, isLunar: false },
+            { name: "이진형", month: 11, day: 22, isLunar: false },
+            { name: "이도연", month: 11, day: 24, isLunar: false },
+            { name: "김태현", month: 11, day: 27, isLunar: false },
+            { name: "추대식", month: 12, day: 1, isLunar: false },
+            { name: "김점순", month: 11, day: 3, isLunar: true }
+        ];
+
+        let existingBirthdays = [];
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.toggle('error', isError);
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        async function login() {
+            const pw = document.getElementById('passwordInput').value;
+            if (pw !== 'gilmok2026') {
+                showToast('비밀번호가 틀렸습니다', true);
+                return;
+            }
+            document.getElementById('loginCard').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            await loadExistingAndAnalyze();
+        }
+
+        async function loadExistingAndAnalyze() {
+            try {
+                const snapshot = await db.collection('birthdays').get();
+                existingBirthdays = [];
+                snapshot.forEach(doc => existingBirthdays.push(doc.data()));
+
+                // 키 함수: 같은 사람이면 같은 키 반환
+                const key = b => `${b.name}|${b.month}|${b.day}|${b.isLunar ? 'L' : 'S'}`;
+                const existingKeys = new Set(existingBirthdays.map(key));
+
+                let solar = 0, lunar = 0, duplicates = 0;
+                const listEl = document.getElementById('birthdayList');
+                listEl.innerHTML = '';
+
+                MIGRATION_DATA.forEach(b => {
+                    if (b.isLunar) lunar++; else solar++;
+                    const isDup = existingKeys.has(key(b));
+                    if (isDup) duplicates++;
+
+                    const item = document.createElement('div');
+                    item.className = 'item' + (b.isLunar ? ' lunar' : '') + (isDup ? ' duplicate' : '');
+                    item.innerHTML = `
+                        <span class="name">${b.name}</span>
+                        <span class="meta">${b.isLunar ? '🌙 음 ' : '☀️ '}${b.month}/${b.day}${isDup ? ' (이미 있음)' : ''}</span>
+                    `;
+                    listEl.appendChild(item);
+                });
+
+                document.getElementById('totalCount').textContent = MIGRATION_DATA.length;
+                document.getElementById('solarCount').textContent = solar;
+                document.getElementById('lunarCount').textContent = lunar;
+                document.getElementById('existingCount').textContent = duplicates;
+                document.getElementById('newCount').textContent = MIGRATION_DATA.length - duplicates;
+
+                if (MIGRATION_DATA.length - duplicates === 0) {
+                    document.getElementById('migrateBtn').disabled = true;
+                    document.getElementById('migrateBtn').textContent = '추가할 항목 없음 (모두 중복)';
+                }
+            } catch (error) {
+                console.error(error);
+                showToast('데이터 로드 실패: ' + error.message, true);
+            }
+        }
+
+        async function runMigration() {
+            const btn = document.getElementById('migrateBtn');
+            btn.disabled = true;
+            btn.textContent = '진행 중...';
+
+            const key = b => `${b.name}|${b.month}|${b.day}|${b.isLunar ? 'L' : 'S'}`;
+            const existingKeys = new Set(existingBirthdays.map(key));
+            const toAdd = MIGRATION_DATA.filter(b => !existingKeys.has(key(b)));
+
+            document.getElementById('progressContainer').style.display = 'block';
+            const progressBar = document.getElementById('progressBar');
+            const statusEl = document.getElementById('migrationStatus');
+
+            let success = 0, failed = 0;
+            for (let i = 0; i < toAdd.length; i++) {
+                const b = toAdd[i];
+                try {
+                    await db.collection('birthdays').add({
+                        name: b.name,
+                        month: b.month,
+                        day: b.day,
+                        isLunar: b.isLunar,
+                        addedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        migratedFromHardcoded: true
+                    });
+                    success++;
+                } catch (error) {
+                    console.error('실패:', b.name, error);
+                    failed++;
+                }
+                const pct = ((i + 1) / toAdd.length) * 100;
+                progressBar.style.width = pct + '%';
+                statusEl.textContent = `진행: ${i + 1}/${toAdd.length} (성공 ${success}, 실패 ${failed})`;
+            }
+
+            document.getElementById('completeCard').style.display = 'block';
+            document.getElementById('completeMsg').innerHTML = `
+                🎉 마이그레이션 완료!<br><br>
+                ✅ 추가됨: ${success}명<br>
+                ${failed > 0 ? `❌ 실패: ${failed}명<br>` : ''}
+                ⏭️ 중복으로 건너뜀: ${existingKeys.size > 0 ? MIGRATION_DATA.length - toAdd.length : 0}명<br><br>
+                <strong>다음 단계:</strong><br>
+                새 index.html을 GitHub에 올리면 됩니다. 이미 하드코딩 데이터가 비워져 있어요. 그 다음 이 마이그레이션 파일은 삭제해도 됩니다.
+            `;
+            btn.textContent = '마이그레이션 완료';
+        }
+    </script>
+</body>
+</html>
