@@ -221,24 +221,24 @@
         }
 
         .birthday-delete-btn {
-            background: rgba(244, 67, 54, 0.12);
+            background: transparent;
             border: none;
-            color: #e53935;
-            font-size: 0.7rem;
+            color: #ccc;
+            font-size: 0.6rem;
             cursor: pointer;
-            padding: 1px 5px;
-            border-radius: 4px;
-            margin-left: 4px;
-            line-height: 1.2;
-            font-weight: 700;
+            padding: 0 3px;
+            margin-left: 2px;
+            line-height: 1;
+            font-weight: 400;
             font-family: inherit;
             vertical-align: middle;
+            opacity: 0.5;
             transition: all 0.2s ease;
         }
 
         .birthday-delete-btn:hover {
-            background: rgba(244, 67, 54, 0.3);
-            transform: scale(1.15);
+            color: #999;
+            opacity: 1;
         }
 
         .lunar-tag {
@@ -1282,8 +1282,8 @@
             });
         });
 
-        // 생일 표시 상태 (기본: 숨김)
-        let showBirthdays = false;
+        // 생일 표시 상태 (기본: 표시)
+        let showBirthdays = true;
 
         function toggleBirthdays() {
             showBirthdays = !showBirthdays;
@@ -1524,6 +1524,11 @@
         initBirthdaySelects();
         setupRealtimeListener();
         setupBirthdaysListener();
+
+        // 생일 표시 기본 ON: 토글 버튼에 active 클래스 적용
+        if (showBirthdays) {
+            document.getElementById('birthdayToggle').classList.add('active');
+        }
     </script>
 </body>
 </html>
