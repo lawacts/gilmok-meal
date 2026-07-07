@@ -534,7 +534,8 @@
                     name,
                     month,
                     day,
-                    type
+                    type,
+                    isLunar: type === 'lunar'
                 });
 
                 document.getElementById('newName').value = '';
@@ -739,7 +740,10 @@
 
                 // 초기 데이터 업로드
                 for (const birthday of INITIAL_BIRTHDAYS) {
-                    await db.collection('birthdays').add(birthday);
+                    await db.collection('birthdays').add({
+                        ...birthday,
+                        isLunar: birthday.type === 'lunar'
+                    });
                 }
 
                 showToast(`${INITIAL_BIRTHDAYS.length}명의 생일 데이터가 업로드되었습니다.`, 'success');

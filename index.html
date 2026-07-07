@@ -1401,7 +1401,7 @@
             for (const eb of extraBirthdays) {
                 let solarMonth, solarDay, birthdayStr;
 
-                if (eb.isLunar) {
+                if (eb.isLunar || eb.type === 'lunar') {
                     const solar = lunarToSolar(eb.month, eb.day, year);
                     if (!solar) continue;
                     solarMonth = solar.month;
@@ -1510,6 +1510,7 @@
                     month,
                     day,
                     isLunar,
+                    type: isLunar ? 'lunar' : 'solar',
                     addedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 showToast('생일이 추가되었습니다 🎂');
