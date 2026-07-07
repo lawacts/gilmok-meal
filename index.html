@@ -1072,11 +1072,7 @@
                     <div class="birthdays-label">🎂 이번 주 생일</div>
                     <div class="birthdays-list">
                         ${sunday.birthdays.map(b => {
-                            const escName = (b.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-                            const deleteBtn = b.id
-                                ? `<button class="birthday-delete-btn" onclick="deleteBirthday('${b.id}', '${escName}')" title="삭제">✕</button>`
-                                : '';
-                            return `<span class="birthday-item">${b.name}(${formatBirthday(b.birthday)})${deleteBtn}</span>`;
+                            return `<span class="birthday-item">${b.name}(${formatBirthday(b.birthday)})</span>`;
                         }).join('')}
                     </div>
                 </div>
