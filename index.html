@@ -156,6 +156,16 @@
             border-color: #4caf50;
         }
 
+        /* 이번 주 강조 (파란 테두리) */
+        .week-card.this-week {
+            border: 3px solid #2196f3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
+        }
+
+        .week-card.this-week:hover {
+            border-color: #2196f3;
+        }
+
         .week-header {
             display: flex;
             justify-content: space-between;
@@ -1057,10 +1067,25 @@
             return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')} 등록`;
         }
 
+        // 오늘이 속한(또는 다가오는) 주일의 week 번호 반환
+        function getThisWeekNumber() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            for (const s of sundaysData) {
+                const sundayDate = new Date(s.date + 'T00:00:00');
+                if (sundayDate >= today) return s.week;
+            }
+            return sundaysData[sundaysData.length - 1].week;
+        }
+
         function createWeekCard(sunday) {
             const card = document.createElement('div');
             card.className = 'week-card';
             card.id = `week-${sunday.week}`;
+
+            if (sunday.week === getThisWeekNumber()) {
+                card.classList.add('this-week');
+            }
 
             const saved = servantData[String(sunday.week)];
             if (saved) {
