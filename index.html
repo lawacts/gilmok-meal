@@ -156,16 +156,6 @@
             border-color: #4caf50;
         }
 
-        /* 이번 주 강조 (파란 테두리) */
-        .week-card.this-week {
-            border: 3px solid #2196f3;
-            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
-        }
-
-        .week-card.this-week:hover {
-            border-color: #2196f3;
-        }
-
         .week-header {
             display: flex;
             justify-content: space-between;
@@ -233,21 +223,21 @@
         .birthday-delete-btn {
             background: transparent;
             border: none;
-            color: #ccc;
-            font-size: 0.6rem;
+            color: #ddd;
+            font-size: 0.75rem;
             cursor: pointer;
-            padding: 0 3px;
-            margin-left: 2px;
+            padding: 0 2px;
+            margin-left: 1px;
             line-height: 1;
-            font-weight: 400;
+            font-weight: 300;
             font-family: inherit;
             vertical-align: middle;
-            opacity: 0.5;
+            opacity: 0.35;
             transition: all 0.2s ease;
         }
 
         .birthday-delete-btn:hover {
-            color: #999;
+            color: #888;
             opacity: 1;
         }
 
@@ -788,7 +778,7 @@
         <div class="modal-content">
             <div class="modal-title">🏠 교회에서 준비 안내</div>
             <div class="modal-info">
-                교회에서 준비를 하게 되면 단일메뉴로, 김밥(여름에는 다른 메뉴)으로 준비하게 되며 <span class="highlight">20만원</span>을 교회통장으로 보내주시면 나머지는 교회에서 부담하여 준비합니다.<br><br>
+                교회에서 준비를 하게 되면 단일메뉴로, 김밥으로 준비하게 되며 <span class="highlight">20만원</span>을 교회통장으로 보내주시면 나머지는 교회에서 부담하여 준비합니다.<br><br>
                 교회통장으로 <span class="highlight">토요일까지</span> 보내주시거나 주일에 오셔서 헌금으로 내주셔도 됩니다.<br><br>
                 교회통장으로 헌금을 보내실때, 보내시는 분에 <span class="highlight">점심+이름</span> 형태로,<br>
                 '<span class="highlight">점심홍길동</span>' 이런식으로 보내주시면 감사하겠습니다.<br><br>
@@ -846,6 +836,19 @@
             <div class="modal-buttons">
                 <button class="modal-btn cancel" onclick="closeAddBirthdayModal()">취소</button>
                 <button class="modal-btn confirm" onclick="saveBirthday()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 감사 안내 모달 -->
+    <div class="modal-overlay hidden" id="thanksModal">
+        <div class="modal-content">
+            <div class="modal-title">💝 감사드립니다</div>
+            <div class="modal-info" id="thanksMessage" style="line-height: 1.8;">
+                <!-- 메시지는 JS에서 채움 -->
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn confirm" onclick="closeThanksModal()" style="flex: 1;">확인</button>
             </div>
         </div>
     </div>
@@ -1067,25 +1070,10 @@
             return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')} 등록`;
         }
 
-        // 오늘이 속한(또는 다가오는) 주일의 week 번호 반환
-        function getThisWeekNumber() {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            for (const s of sundaysData) {
-                const sundayDate = new Date(s.date + 'T00:00:00');
-                if (sundayDate >= today) return s.week;
-            }
-            return sundaysData[sundaysData.length - 1].week;
-        }
-
         function createWeekCard(sunday) {
             const card = document.createElement('div');
             card.className = 'week-card';
             card.id = `week-${sunday.week}`;
-
-            if (sunday.week === getThisWeekNumber()) {
-                card.classList.add('this-week');
-            }
 
             const saved = servantData[String(sunday.week)];
             if (saved) {
@@ -1093,11 +1081,15 @@
             }
 
             const birthdayHTML = sunday.birthdays.length > 0 ? `
-                <div class="birthdays hidden">
+                <div class="birthdays${showBirthdays ? '' : ' hidden'}">
                     <div class="birthdays-label">🎂 이번 주 생일</div>
                     <div class="birthdays-list">
                         ${sunday.birthdays.map(b => {
-                            return `<span class="birthday-item">${b.name}(${formatBirthday(b.birthday)})</span>`;
+                            const escName = (b.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                            const deleteBtn = b.id
+                                ? `<button class="birthday-delete-btn" onclick="deleteBirthday('${b.id}', '${escName}')" title="삭제">×</button>`
+                                : '';
+                            return `<span class="birthday-item">${b.name}(${formatBirthday(b.birthday)})${deleteBtn}</span>`;
                         }).join('')}
                     </div>
                 </div>
@@ -1172,6 +1164,11 @@
                 return;
             }
 
+            // 특정 인물 3개월 이내 중복 신청 제한 (김점순 권사님)
+            if (!checkFrequencyLimit(name, week)) {
+                return;
+            }
+
             const method = selfRadio.checked ? 'self' : 'church';
             let note = '';
             
@@ -1206,6 +1203,57 @@
                 btn.disabled = false;
                 btn.textContent = '등록하기';
             }
+        }
+
+        // ============= 특정 인물 신청 빈도 제한 =============
+        // 이름에 특정 키워드가 포함된 경우 3개월 이내 중복 신청 차단
+        const FREQUENCY_LIMITS = [
+            {
+                keyword: '김점순',
+                days: 90,
+                title: '김점순 권사님',
+                message: '김점순 권사님의 섬김에 감사드립니다.<br>권사님 건강과 평안을 위해 <span class="highlight">3개월에 1번 정도만</span> 섬겨주세요 ^^<br><br>늘 감사합니다. 사랑합니다. 🙏'
+            }
+        ];
+
+        // 등록 가능 여부 검사 (false 반환 시 등록 차단)
+        function checkFrequencyLimit(name, currentWeek) {
+            for (const rule of FREQUENCY_LIMITS) {
+                if (!name.includes(rule.keyword)) continue;
+
+                const currentSunday = sundaysData.find(s => s.week === parseInt(currentWeek));
+                if (!currentSunday) continue;
+                const currentDate = new Date(currentSunday.date + 'T00:00:00');
+
+                // 기존 등록 순회
+                for (const [wkStr, entry] of Object.entries(servantData)) {
+                    if (String(wkStr) === String(currentWeek)) continue; // 자기 자신(수정) 제외
+                    if (!entry.name || !entry.name.includes(rule.keyword)) continue;
+
+                    const existingSunday = sundaysData.find(s => s.week === parseInt(wkStr));
+                    if (!existingSunday) continue;
+                    const existingDate = new Date(existingSunday.date + 'T00:00:00');
+
+                    const diffDays = Math.abs((currentDate - existingDate) / (1000 * 60 * 60 * 24));
+                    if (diffDays <= rule.days) {
+                        // 안내 모달 표시 후 차단
+                        showThanksModal(rule.message);
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        // 감사 안내 모달 열기
+        function showThanksModal(messageHtml) {
+            document.getElementById('thanksMessage').innerHTML = messageHtml;
+            document.getElementById('thanksModal').classList.remove('hidden');
+        }
+
+        // 감사 안내 모달 닫기
+        function closeThanksModal() {
+            document.getElementById('thanksModal').classList.add('hidden');
         }
 
         async function editServant(week) {
@@ -1422,7 +1470,7 @@
             for (const eb of extraBirthdays) {
                 let solarMonth, solarDay, birthdayStr;
 
-                if (eb.isLunar || eb.type === 'lunar') {
+                if (eb.isLunar) {
                     const solar = lunarToSolar(eb.month, eb.day, year);
                     if (!solar) continue;
                     solarMonth = solar.month;
@@ -1531,7 +1579,6 @@
                     month,
                     day,
                     isLunar,
-                    type: isLunar ? 'lunar' : 'solar',
                     addedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 showToast('생일이 추가되었습니다 🎂');
