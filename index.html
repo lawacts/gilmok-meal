@@ -498,6 +498,32 @@
             padding: 0;
         }
 
+        /* 3초 길게 누르기: 진행 표시 */
+        .add-birthday-btn {
+            position: relative;
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+        }
+
+        .add-birthday-btn::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            height: 0;
+            background: rgba(102, 126, 234, 0.45);
+            pointer-events: none;
+        }
+
+        .add-birthday-btn.pressing::before {
+            height: 100%;
+            transition: height 3s linear;
+        }
+
         .add-birthday-btn:hover {
             background: rgba(102, 126, 234, 0.3);
             transform: scale(1.1);
@@ -716,7 +742,7 @@
     <div class="container">
         <header>
             <h1>🍚 길목교회 주일식사 섬김</h1>
-            <p>2026년 52주 식사 섬김 일정 등록</p>
+            <p id="headerSubtitle">2026년 52주 식사 섬김 일정 등록</p>
             <div class="sync-status">
                 <div class="sync-dot"></div>
                 <span>실시간 동기화 중</span>
@@ -727,7 +753,7 @@
             <h2>
                 <span>📊 섬김 현황</span>
                 <button class="birthday-toggle" id="birthdayToggle" onclick="toggleBirthdays()">🎂</button>
-                <button class="add-birthday-btn" onclick="openAddBirthdayModal()" title="생일자 추가">＋</button>
+                <button class="add-birthday-btn" id="addBirthdayBtn" title="생일자 추가 (3초 길게 누르면 생일 관리)">＋</button>
             </h2>
             <div class="summary-stats">
                 <div class="stat-card">
@@ -878,61 +904,59 @@
         // Google Sheets 웹앱 URL
         const GOOGLE_SHEETS_WEBHOOK = "https://script.google.com/macros/s/AKfycbxT65CMVPV2S4Wxk_9vWCWHVCHmI29FLXX-8Zcm661NAZ7hGxH3WKBlBwteA93hgJQwGQ/exec";
 
-        // 2026년 주일 데이터 (생일: 전주일에 미리 표시, 요일 포함, 날짜순 정렬)
-        const sundaysData = [
-            { week: 1, date: "2026-01-04", month: 1, day: 4, birthdays: [] },
-            { week: 2, date: "2026-01-11", month: 1, day: 11, birthdays: [] },
-            { week: 3, date: "2026-01-18", month: 1, day: 18, birthdays: [] },
-            { week: 4, date: "2026-01-25", month: 1, day: 25, birthdays: [] },
-            { week: 5, date: "2026-02-01", month: 2, day: 1, birthdays: [] },
-            { week: 6, date: "2026-02-08", month: 2, day: 8, birthdays: [] },
-            { week: 7, date: "2026-02-15", month: 2, day: 15, birthdays: [] },
-            { week: 8, date: "2026-02-22", month: 2, day: 22, birthdays: [] },
-            { week: 9, date: "2026-03-01", month: 3, day: 1, birthdays: [] },
-            { week: 10, date: "2026-03-08", month: 3, day: 8, birthdays: [] },
-            { week: 11, date: "2026-03-15", month: 3, day: 15, birthdays: [] },
-            { week: 12, date: "2026-03-22", month: 3, day: 22, birthdays: [] },
-            { week: 13, date: "2026-03-29", month: 3, day: 29, birthdays: [] },
-            { week: 14, date: "2026-04-05", month: 4, day: 5, birthdays: [] },
-            { week: 15, date: "2026-04-12", month: 4, day: 12, birthdays: [] },
-            { week: 16, date: "2026-04-19", month: 4, day: 19, birthdays: [] },
-            { week: 17, date: "2026-04-26", month: 4, day: 26, birthdays: [] },
-            { week: 18, date: "2026-05-03", month: 5, day: 3, birthdays: [] },
-            { week: 19, date: "2026-05-10", month: 5, day: 10, birthdays: [] },
-            { week: 20, date: "2026-05-17", month: 5, day: 17, birthdays: [] },
-            { week: 21, date: "2026-05-24", month: 5, day: 24, birthdays: [] },
-            { week: 22, date: "2026-05-31", month: 5, day: 31, birthdays: [] },
-            { week: 23, date: "2026-06-07", month: 6, day: 7, birthdays: [] },
-            { week: 24, date: "2026-06-14", month: 6, day: 14, birthdays: [] },
-            { week: 25, date: "2026-06-21", month: 6, day: 21, birthdays: [] },
-            { week: 26, date: "2026-06-28", month: 6, day: 28, birthdays: [] },
-            { week: 27, date: "2026-07-05", month: 7, day: 5, birthdays: [] },
-            { week: 28, date: "2026-07-12", month: 7, day: 12, birthdays: [] },
-            { week: 29, date: "2026-07-19", month: 7, day: 19, birthdays: [] },
-            { week: 30, date: "2026-07-26", month: 7, day: 26, birthdays: [] },
-            { week: 31, date: "2026-08-02", month: 8, day: 2, birthdays: [] },
-            { week: 32, date: "2026-08-09", month: 8, day: 9, birthdays: [] },
-            { week: 33, date: "2026-08-16", month: 8, day: 16, birthdays: [] },
-            { week: 34, date: "2026-08-23", month: 8, day: 23, birthdays: [] },
-            { week: 35, date: "2026-08-30", month: 8, day: 30, birthdays: [] },
-            { week: 36, date: "2026-09-06", month: 9, day: 6, birthdays: [] },
-            { week: 37, date: "2026-09-13", month: 9, day: 13, birthdays: [] },
-            { week: 38, date: "2026-09-20", month: 9, day: 20, birthdays: [] },
-            { week: 39, date: "2026-09-27", month: 9, day: 27, birthdays: [] },
-            { week: 40, date: "2026-10-04", month: 10, day: 4, birthdays: [] },
-            { week: 41, date: "2026-10-11", month: 10, day: 11, birthdays: [] },
-            { week: 42, date: "2026-10-18", month: 10, day: 18, birthdays: [] },
-            { week: 43, date: "2026-10-25", month: 10, day: 25, birthdays: [] },
-            { week: 44, date: "2026-11-01", month: 11, day: 1, birthdays: [] },
-            { week: 45, date: "2026-11-08", month: 11, day: 8, birthdays: [] },
-            { week: 46, date: "2026-11-15", month: 11, day: 15, birthdays: [] },
-            { week: 47, date: "2026-11-22", month: 11, day: 22, birthdays: [] },
-            { week: 48, date: "2026-11-29", month: 11, day: 29, birthdays: [] },
-            { week: 49, date: "2026-12-06", month: 12, day: 6, birthdays: [] },
-            { week: 50, date: "2026-12-13", month: 12, day: 13, birthdays: [] },
-            { week: 51, date: "2026-12-20", month: 12, day: 20, birthdays: [] },
-            { week: 52, date: "2026-12-27", month: 12, day: 27, birthdays: [] }
-        ];
+        // ===== 표시 연도 =====
+        // 기본: 오늘 날짜의 연도 (해가 바뀌면 자동 전환)
+        // 미리보기: 주소 뒤에 ?year=2027 을 붙이면 해당 연도로 표시
+        const DISPLAY_YEAR = (() => {
+            const param = parseInt(new URLSearchParams(window.location.search).get('year'));
+            if (param >= 2000 && param <= 2050) return param;
+            return new Date().getFullYear();
+        })();
+
+        // 섬김 데이터 문서 ID 규칙
+        // 2026년: 기존 데이터 그대로 주차 번호만 사용 ("1" ~ "52")
+        // 2027년부터: "연도-주차" ("2027-1" ~ "2027-52")
+        const LEGACY_YEAR = 2026;
+        function servantDocId(week) {
+            return DISPLAY_YEAR === LEGACY_YEAR ? String(week) : `${DISPLAY_YEAR}-${week}`;
+        }
+        // 문서 ID → 현재 표시 연도의 주차 번호 (다른 연도 문서면 null)
+        function weekFromDocId(docId) {
+            if (DISPLAY_YEAR === LEGACY_YEAR) {
+                return /^\d+$/.test(docId) ? parseInt(docId) : null;
+            }
+            const m = docId.match(/^(\d{4})-(\d+)$/);
+            return (m && parseInt(m[1]) === DISPLAY_YEAR) ? parseInt(m[2]) : null;
+        }
+
+        // 해당 연도의 모든 주일 자동 생성 (해에 따라 52주 또는 53주)
+        function generateSundays(year) {
+            const list = [];
+            const d = new Date(year, 0, 1);
+            d.setDate(d.getDate() + ((7 - d.getDay()) % 7)); // 첫 번째 일요일
+            let week = 1;
+            while (d.getFullYear() === year) {
+                const month = d.getMonth() + 1;
+                const day = d.getDate();
+                list.push({
+                    week,
+                    date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                    month,
+                    day,
+                    birthdays: []
+                });
+                week++;
+                d.setDate(d.getDate() + 7);
+            }
+            return list;
+        }
+
+        // 주일 데이터 (생일: 전주일에 미리 표시, 요일 포함, 날짜순 정렬)
+        const sundaysData = generateSundays(DISPLAY_YEAR);
+
+        // 제목·부제에 연도 반영
+        document.title = `길목교회 ${DISPLAY_YEAR}년 주일식사 섬김`;
+        document.getElementById('headerSubtitle').textContent = `${DISPLAY_YEAR}년 ${sundaysData.length}주 식사 섬김 일정 등록`;
 
         const monthNames = ['', '1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
 
@@ -944,7 +968,8 @@
             db.collection('servants').onSnapshot((snapshot) => {
                 servantData = {};
                 snapshot.forEach((doc) => {
-                    servantData[doc.id] = doc.data();
+                    const week = weekFromDocId(doc.id);
+                    if (week !== null) servantData[String(week)] = doc.data();
                 });
                 renderCalendar();
                 hideLoading();
@@ -967,6 +992,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         week: week,
+                        year: DISPLAY_YEAR,
                         date: sunday.date,
                         name: data.name,
                         method: data.method === 'self' ? '본인준비' : '교회준비',
@@ -1194,7 +1220,7 @@
             btn.textContent = '저장 중...';
 
             try {
-                await db.collection('servants').doc(String(week)).set(data);
+                await db.collection('servants').doc(servantDocId(week)).set(data);
                 await syncToGoogleSheets(week, data);
                 showToast('등록되었습니다! 🙏');
             } catch (error) {
@@ -1270,7 +1296,7 @@
             }
             
             try {
-                await db.collection('servants').doc(String(week)).delete();
+                await db.collection('servants').doc(servantDocId(week)).delete();
                 await deleteFromGoogleSheets(week);
                 showToast('삭제되었습니다.');
             } catch (error) {
@@ -1290,7 +1316,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'delete',
-                        week: week
+                        week: week,
+                        year: DISPLAY_YEAR,
+                        date: (sundaysData.find(s => s.week === parseInt(week)) || {}).date || ''
                     })
                 });
             } catch (error) {
@@ -1303,8 +1331,9 @@
             const selfCount = Object.values(servantData).filter(s => s.method === 'self').length;
             const churchCount = Object.values(servantData).filter(s => s.method === 'church').length;
 
+            document.getElementById('totalWeeks').textContent = sundaysData.length;
             document.getElementById('filledWeeks').textContent = filled;
-            document.getElementById('remainingWeeks').textContent = 52 - filled;
+            document.getElementById('remainingWeeks').textContent = sundaysData.length - filled;
             document.getElementById('selfPrepare').textContent = selfCount;
             document.getElementById('churchPrepare').textContent = churchCount;
         }
@@ -1421,6 +1450,11 @@
             });
         }
 
+        // 음력 여부 판정 — isLunar(index·마이그레이션)와 type(birthday.html 구버전) 두 필드 모두 인정
+        function isLunarBirthday(b) {
+            return b.isLunar === true || b.isLunar === 'true' || b.type === 'lunar';
+        }
+
         // 음력 → 양력 변환 (현재 연도 기준)
         function lunarToSolar(lunarMonth, lunarDay, year) {
             try {
@@ -1470,8 +1504,11 @@
             for (const eb of extraBirthdays) {
                 let solarMonth, solarDay, birthdayStr;
 
-                if (eb.isLunar) {
-                    const solar = lunarToSolar(eb.month, eb.day, year);
+                if (isLunarBirthday(eb)) {
+                    // 음력 해(year)의 날짜가 양력으로 다음 해 1월로 넘어갈 수 있으므로,
+                    // 전년도 음력과 올해 음력을 모두 변환해 양력 연도가 표시 연도와 같은 쪽을 사용
+                    const candidates = [lunarToSolar(eb.month, eb.day, year), lunarToSolar(eb.month, eb.day, year - 1)];
+                    const solar = candidates.find(c => c && c.year === year);
                     if (!solar) continue;
                     solarMonth = solar.month;
                     solarDay = solar.day;
@@ -1519,6 +1556,51 @@
             document.getElementById('birthdayDay').value = '';
             document.getElementById('birthdaySolar').checked = true;
             document.getElementById('addBirthdayModal').classList.remove('hidden');
+        }
+
+        // ＋ 버튼: 짧게 누르면 생일 추가 모달, 3초 길게 누르면 birthday.html(생일 관리)로 이동
+        function setupAddBirthdayButton() {
+            const btn = document.getElementById('addBirthdayBtn');
+            const LONG_PRESS_MS = 3000;
+            let timer = null;
+            let longPressed = false;
+
+            const cancel = () => {
+                clearTimeout(timer);
+                timer = null;
+                btn.classList.remove('pressing');
+            };
+
+            btn.addEventListener('pointerdown', (e) => {
+                if (e.button !== undefined && e.button !== 0) return; // 마우스 왼쪽/터치만
+                longPressed = false;
+                btn.classList.add('pressing');
+                timer = setTimeout(() => {
+                    longPressed = true;
+                    cancel();
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    window.location.href = 'birthday.html';
+                }, LONG_PRESS_MS);
+            });
+            // 0.6초 이상 누르다 3초 전에 떼면 '취소'로 보고 모달도 열지 않음
+            let pressStart = 0;
+            btn.addEventListener('pointerdown', () => { pressStart = Date.now(); });
+            btn.addEventListener('pointerup', () => {
+                if (timer && Date.now() - pressStart >= 600) longPressed = true; // 뒤따르는 click 무시
+                cancel();
+            });
+            btn.addEventListener('pointerleave', cancel);
+            btn.addEventListener('pointercancel', cancel);
+            btn.addEventListener('contextmenu', (e) => e.preventDefault()); // 모바일 길게 누르기 메뉴 방지
+
+            btn.addEventListener('click', (e) => {
+                if (longPressed) { // 길게 누른 뒤의 click은 무시
+                    e.preventDefault();
+                    longPressed = false;
+                    return;
+                }
+                openAddBirthdayModal();
+            });
         }
 
         // 생일 추가 모달 닫기
@@ -1579,6 +1661,7 @@
                     month,
                     day,
                     isLunar,
+                    type: isLunar ? 'lunar' : 'solar',
                     addedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 showToast('생일이 추가되었습니다 🎂');
@@ -1591,6 +1674,7 @@
 
         // 초기화
         initBirthdaySelects();
+        setupAddBirthdayButton();
         setupRealtimeListener();
         setupBirthdaysListener();
 
