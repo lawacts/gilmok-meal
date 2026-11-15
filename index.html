@@ -156,6 +156,29 @@
             font-weight: 700;
         }
 
+        /* 이번 주일 카드 강조: 한 줄 전체 차지 + 굵은 테두리 + 큰 글씨 */
+        .this-week-section .week-card.this-week-card {
+            grid-column: 1 / -1;
+            padding: 24px;
+            border: 4px solid #667eea;
+            box-shadow: 0 0 0 5px rgba(102, 126, 234, 0.2), 0 10px 30px rgba(102, 126, 234, 0.35);
+        }
+
+        .this-week-card .week-tag {
+            padding: 6px 16px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            font-size: 1rem;
+        }
+
+        .this-week-card .week-info h3 {
+            font-size: 1.5rem;
+        }
+
+        .this-week-card .servant-name {
+            font-size: 1.5rem;
+        }
+
         .week-tag.next {
             background: #9aa3c7;
         }
@@ -1457,23 +1480,26 @@
             let idx = displayData.findIndex(s => new Date(s.date + 'T00:00:00') >= today);
             if (idx === -1) idx = displayData.length - 1;
             const target = displayData[idx];
-            const next = displayData[idx + 1]; // 연말에는 없을 수 있음
+            // 다음 주, 그 다음 주 (연말에는 없을 수 있음)
+            const next = displayData[idx + 1];
+            const nextNext = displayData[idx + 2];
 
             const section = document.createElement('div');
             section.className = 'month-section this-week-section';
             section.innerHTML = `
                 <h2 class="month-title">
                     <span class="month-icon">📌</span>
-                    ${next ? '이번 주 · 다음 주' : '이번 주일'}
+                    ${next ? '다가오는 주일' : '이번 주일'}
                     <button class="goto-month-btn" onclick="scrollToMonth(${target.month})">${monthNames[target.month]} 보기 ↓</button>
                 </h2>
                 <div class="weeks-grid"></div>
             `;
 
             const grid = section.querySelector('.weeks-grid');
-            [[target, '이번 주일', ''], [next, '다음 주일', ' next']].forEach(([sunday, label, cls]) => {
+            [[target, '⭐ 이번 주일', ''], [next, '다음 주일', ' next'], [nextNext, '다다음 주일', ' next']].forEach(([sunday, label, cls]) => {
                 if (!sunday) return;
                 const card = createWeekCard(sunday, 'top-');
+                if (sunday === target) card.classList.add('this-week-card');
                 card.insertAdjacentHTML('afterbegin', `<div class="week-tag${cls}">${label}</div>`);
                 grid.appendChild(card);
             });
