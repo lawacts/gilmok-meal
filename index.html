@@ -974,26 +974,38 @@
         // ===== 표시 연도 =====
         // 기본: 오늘 날짜의 연도 (해가 바뀌면 자동 전환)
         // 미리보기: 주소 뒤에 ?year=2027 을 붙이면 해당 연도로 표시
+        // 오늘 날짜 (0시 기준)
+        // 미리보기: 주소 뒤에 ?today=2026-12-29 를 붙이면 그 날짜인 것처럼 표시
+        function getToday() {
+            const param = new URLSearchParams(window.location.search).get('today') || '';
+            let d = /^\d{4}-\d{2}-\d{2}$/.test(param) ? new Date(param + 'T00:00:00') : new Date();
+            if (isNaN(d.getTime())) d = new Date();
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        const ACTUAL_YEAR = getToday().getFullYear();
         const DISPLAY_YEAR = (() => {
             const param = parseInt(new URLSearchParams(window.location.search).get('year'));
             if (param >= 2000 && param <= 2050) return param;
-            return new Date().getFullYear();
+            return ACTUAL_YEAR;
         })();
+        // 연말에 맨 위 '다가오는 주일'에 이어서 보여줄 다음 해
+        const NEXT_YEAR = DISPLAY_YEAR + 1;
 
         // 섬김 데이터 문서 ID 규칙
         // 2026년: 기존 데이터 그대로 주차 번호만 사용 ("1" ~ "52")
         // 2027년부터: "연도-주차" ("2027-1" ~ "2027-52")
         const LEGACY_YEAR = 2026;
-        function servantDocId(week) {
-            return DISPLAY_YEAR === LEGACY_YEAR ? String(week) : `${DISPLAY_YEAR}-${week}`;
+        function servantDocId(week, year = DISPLAY_YEAR) {
+            return year === LEGACY_YEAR ? String(week) : `${year}-${week}`;
         }
-        // 문서 ID → 현재 표시 연도의 주차 번호 (다른 연도 문서면 null)
-        function weekFromDocId(docId) {
-            if (DISPLAY_YEAR === LEGACY_YEAR) {
-                return /^\d+$/.test(docId) ? parseInt(docId) : null;
-            }
+        // 문서 ID → { year, week } (규칙에 맞지 않으면 null)
+        function parseDocId(docId) {
+            if (/^\d+$/.test(docId)) return { year: LEGACY_YEAR, week: parseInt(docId) };
             const m = docId.match(/^(\d{4})-(\d+)$/);
-            return (m && parseInt(m[1]) === DISPLAY_YEAR) ? parseInt(m[2]) : null;
+            if (!m || parseInt(m[1]) === LEGACY_YEAR) return null;
+            return { year: parseInt(m[1]), week: parseInt(m[2]) };
         }
 
         // 해당 연도의 모든 주일 자동 생성 (해에 따라 52주 또는 53주)
@@ -1006,6 +1018,7 @@
                 const month = d.getMonth() + 1;
                 const day = d.getDate();
                 list.push({
+                    year,
                     week,
                     date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
                     month,
@@ -1020,6 +1033,10 @@
 
         // 주일 데이터 (생일: 전주일에 미리 표시, 요일 포함, 날짜순 정렬)
         const sundaysData = generateSundays(DISPLAY_YEAR);
+        const nextSundaysData = generateSundays(NEXT_YEAR);
+        function sundaysOf(year) {
+            return year === NEXT_YEAR ? nextSundaysData : sundaysData;
+        }
 
         // 제목·부제에 연도 반영
         document.title = `길목교회 ${DISPLAY_YEAR}년 주일식사 섬김`;
@@ -1028,15 +1045,22 @@
         const monthNames = ['', '1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
 
         // 섬김 데이터 (Firebase에서 로드)
-        let servantData = {};
+        let servantData = {};       // 표시 연도
+        let nextServantData = {};   // 다음 해 (연말에 맨 위 카드에서 사용)
+        function servantsOf(year) {
+            return year === NEXT_YEAR ? nextServantData : servantData;
+        }
 
         // Firebase 실시간 리스너 설정
         function setupRealtimeListener() {
             db.collection('servants').onSnapshot((snapshot) => {
                 servantData = {};
+                nextServantData = {};
                 snapshot.forEach((doc) => {
-                    const week = weekFromDocId(doc.id);
-                    if (week !== null) servantData[String(week)] = doc.data();
+                    const id = parseDocId(doc.id);
+                    if (!id) return;
+                    if (id.year === DISPLAY_YEAR) servantData[String(id.week)] = doc.data();
+                    else if (id.year === NEXT_YEAR) nextServantData[String(id.week)] = doc.data();
                 });
                 renderCalendar();
                 hideLoading();
@@ -1048,18 +1072,18 @@
         }
 
         // Google Sheets에 동기화
-        async function syncToGoogleSheets(week, data) {
+        async function syncToGoogleSheets(week, data, year = DISPLAY_YEAR) {
             if (!GOOGLE_SHEETS_WEBHOOK) return;
-            
+
             try {
-                const sunday = sundaysData.find(s => s.week === parseInt(week));
+                const sunday = sundaysOf(year).find(s => s.week === parseInt(week));
                 await fetch(GOOGLE_SHEETS_WEBHOOK, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         week: week,
-                        year: DISPLAY_YEAR,
+                        year: year,
                         date: sunday.date,
                         name: data.name,
                         method: data.method === 'self' ? '본인준비' : '교회준비',
@@ -1164,7 +1188,7 @@
             card.className = 'week-card';
             card.id = `${idPrefix}week-${sunday.week}`;
 
-            const saved = servantData[String(sunday.week)];
+            const saved = servantsOf(sunday.year)[String(sunday.week)];
             if (saved) {
                 card.classList.add('has-servant');
             }
@@ -1199,7 +1223,7 @@
                         <div class="servant-method">${saved.method === 'self' ? '📦 본인준비' : '🏠 교회에서준비'}</div>
                         <div class="servant-time">${formatTimestamp(saved.timestamp)}</div>
                     </div>
-                    <button class="edit-btn" onclick="editServant(${sunday.week})">수정하기</button>
+                    <button class="edit-btn" onclick="editServant(${sunday.week}, ${sunday.year})">수정하기</button>
                 `;
             } else {
                 card.innerHTML = `
@@ -1228,14 +1252,14 @@
                             </div>
                         </div>
                     </div>
-                    <button class="save-btn" onclick="saveServant(${sunday.week}, '${idPrefix}')">등록하기</button>
+                    <button class="save-btn" onclick="saveServant(${sunday.week}, '${idPrefix}', ${sunday.year})">등록하기</button>
                 `;
             }
 
             return card;
         }
 
-        async function saveServant(week, idPrefix = '') {
+        async function saveServant(week, idPrefix = '', year = DISPLAY_YEAR) {
             const nameInput = document.getElementById(`${idPrefix}name-${week}`);
             const name = nameInput.value.trim();
 
@@ -1254,7 +1278,7 @@
             }
 
             // 특정 인물 3개월 이내 중복 신청 제한 (김점순 권사님)
-            if (!checkFrequencyLimit(name, week)) {
+            if (!checkFrequencyLimit(name, week, year)) {
                 return;
             }
 
@@ -1283,8 +1307,8 @@
             btn.textContent = '저장 중...';
 
             try {
-                await db.collection('servants').doc(servantDocId(week)).set(data);
-                await syncToGoogleSheets(week, data);
+                await db.collection('servants').doc(servantDocId(week, year)).set(data);
+                await syncToGoogleSheets(week, data, year);
                 showToast('등록되었습니다! 🙏');
             } catch (error) {
                 console.error('저장 실패:', error);
@@ -1306,28 +1330,30 @@
         ];
 
         // 등록 가능 여부 검사 (false 반환 시 등록 차단)
-        function checkFrequencyLimit(name, currentWeek) {
+        function checkFrequencyLimit(name, currentWeek, year = DISPLAY_YEAR) {
             for (const rule of FREQUENCY_LIMITS) {
                 if (!name.includes(rule.keyword)) continue;
 
-                const currentSunday = sundaysData.find(s => s.week === parseInt(currentWeek));
+                const currentSunday = sundaysOf(year).find(s => s.week === parseInt(currentWeek));
                 if (!currentSunday) continue;
                 const currentDate = new Date(currentSunday.date + 'T00:00:00');
 
-                // 기존 등록 순회
-                for (const [wkStr, entry] of Object.entries(servantData)) {
-                    if (String(wkStr) === String(currentWeek)) continue; // 자기 자신(수정) 제외
-                    if (!entry.name || !entry.name.includes(rule.keyword)) continue;
+                // 기존 등록 순회 (표시 연도 + 다음 해)
+                for (const y of [DISPLAY_YEAR, NEXT_YEAR]) {
+                    for (const [wkStr, entry] of Object.entries(servantsOf(y))) {
+                        if (y === year && String(wkStr) === String(currentWeek)) continue; // 자기 자신(수정) 제외
+                        if (!entry.name || !entry.name.includes(rule.keyword)) continue;
 
-                    const existingSunday = sundaysData.find(s => s.week === parseInt(wkStr));
-                    if (!existingSunday) continue;
-                    const existingDate = new Date(existingSunday.date + 'T00:00:00');
+                        const existingSunday = sundaysOf(y).find(s => s.week === parseInt(wkStr));
+                        if (!existingSunday) continue;
+                        const existingDate = new Date(existingSunday.date + 'T00:00:00');
 
-                    const diffDays = Math.abs((currentDate - existingDate) / (1000 * 60 * 60 * 24));
-                    if (diffDays <= rule.days) {
-                        // 안내 모달 표시 후 차단
-                        showThanksModal(rule.message);
-                        return false;
+                        const diffDays = Math.abs((currentDate - existingDate) / (1000 * 60 * 60 * 24));
+                        if (diffDays <= rule.days) {
+                            // 안내 모달 표시 후 차단
+                            showThanksModal(rule.message);
+                            return false;
+                        }
                     }
                 }
             }
@@ -1345,8 +1371,8 @@
             document.getElementById('thanksModal').classList.add('hidden');
         }
 
-        async function editServant(week) {
-            const saved = servantData[String(week)];
+        async function editServant(week, year = DISPLAY_YEAR) {
+            const saved = servantsOf(year)[String(week)];
             if (!saved) return;
             
             const inputName = prompt(`삭제하려면 등록된 이름 "${saved.name}"을(를) 그대로 입력하세요:`);
@@ -1359,8 +1385,8 @@
             }
             
             try {
-                await db.collection('servants').doc(servantDocId(week)).delete();
-                await deleteFromGoogleSheets(week);
+                await db.collection('servants').doc(servantDocId(week, year)).delete();
+                await deleteFromGoogleSheets(week, year);
                 showToast('삭제되었습니다.');
             } catch (error) {
                 console.error('삭제 실패:', error);
@@ -1369,7 +1395,7 @@
         }
 
         // Google Sheets에서 삭제
-        async function deleteFromGoogleSheets(week) {
+        async function deleteFromGoogleSheets(week, year = DISPLAY_YEAR) {
             if (!GOOGLE_SHEETS_WEBHOOK) return;
             
             try {
@@ -1380,8 +1406,8 @@
                     body: JSON.stringify({
                         action: 'delete',
                         week: week,
-                        year: DISPLAY_YEAR,
-                        date: (sundaysData.find(s => s.week === parseInt(week)) || {}).date || ''
+                        year: year,
+                        date: (sundaysOf(year).find(s => s.week === parseInt(week)) || {}).date || ''
                     })
                 });
             } catch (error) {
@@ -1473,16 +1499,25 @@
             container.innerHTML = '';
             if (!displayData.length) return;
 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const today = getToday();
+            const isUpcoming = s => new Date(s.date + 'T00:00:00') >= today;
 
+            // 오늘 이후의 주일 3개. 연말에는 내년 1월 주일을 이어서 보여줌
+            // (?year= 로 다른 해를 미리 보는 중에는 그 해 주일만 사용)
+            let upcoming = displayData.filter(isUpcoming);
+            if (DISPLAY_YEAR === ACTUAL_YEAR && upcoming.length < 3) {
+                upcoming = upcoming.concat(getMergedSundays(nextSundaysData).filter(isUpcoming));
+            }
+            upcoming = upcoming.slice(0, 3);
             // 모든 주일이 오늘 이전이면 마지막 주일로
-            let idx = displayData.findIndex(s => new Date(s.date + 'T00:00:00') >= today);
-            if (idx === -1) idx = displayData.length - 1;
-            const target = displayData[idx];
-            // 다음 주, 그 다음 주 (연말에는 없을 수 있음)
-            const next = displayData[idx + 1];
-            const nextNext = displayData[idx + 2];
+            if (!upcoming.length) upcoming = [displayData[displayData.length - 1]];
+
+            const [target, next, nextNext] = upcoming;
+
+            // 이번 주일이 표시 연도면 해당 월로 스크롤, 내년이면 내년 달력으로 이동
+            const gotoBtn = target.year === DISPLAY_YEAR
+                ? `<button class="goto-month-btn" onclick="scrollToMonth(${target.month})">${monthNames[target.month]} 보기 ↓</button>`
+                : `<button class="goto-month-btn" onclick="location.href='?year=${target.year}'">${target.year}년 보기 →</button>`;
 
             const section = document.createElement('div');
             section.className = 'month-section this-week-section';
@@ -1490,7 +1525,7 @@
                 <h2 class="month-title">
                     <span class="month-icon">📌</span>
                     ${next ? '다가오는 주일' : '이번 주일'}
-                    <button class="goto-month-btn" onclick="scrollToMonth(${target.month})">${monthNames[target.month]} 보기 ↓</button>
+                    ${gotoBtn}
                 </h2>
                 <div class="weeks-grid"></div>
             `;
@@ -1498,7 +1533,7 @@
             const grid = section.querySelector('.weeks-grid');
             [[target, '⭐ 이번 주일', ''], [next, '다음 주일', ' next'], [nextNext, '다다음 주일', ' next']].forEach(([sunday, label, cls]) => {
                 if (!sunday) return;
-                const card = createWeekCard(sunday, 'top-');
+                const card = createWeekCard(sunday, sunday.year === DISPLAY_YEAR ? 'top-' : 'topnext-');
                 if (sunday === target) card.classList.add('this-week-card');
                 card.insertAdjacentHTML('afterbegin', `<div class="week-tag${cls}">${label}</div>`);
                 grid.appendChild(card);
@@ -1538,10 +1573,10 @@
         }
 
         // 특정 양력 날짜가 속한 주일(그 날짜 직전 또는 당일) 찾기
-        function findSundayWeekForDate(month, day, year) {
+        function findSundayWeekForDate(month, day, year, list = sundaysData) {
             const targetTime = new Date(year, month - 1, day).getTime();
             let bestSunday = null;
-            for (const sunday of sundaysData) {
+            for (const sunday of list) {
                 const sundayTime = new Date(sunday.date + 'T00:00:00').getTime();
                 if (sundayTime <= targetTime) {
                     bestSunday = sunday;
@@ -1550,7 +1585,7 @@
                 }
             }
             // 해당 연도 첫 주일보다 이전 날짜면 첫 주일에 배치
-            return bestSunday || sundaysData[0];
+            return bestSunday || list[0];
         }
 
         // 요일 이름 반환
@@ -1560,15 +1595,16 @@
         }
 
         // 추가 생일을 sundaysData에 병합한 사본 반환 (원본 보존)
-        function getMergedSundays() {
+        // list: 병합 대상 주일 목록 (기본: 표시 연도, 연말 상단 카드용으로 다음 해 목록도 전달)
+        function getMergedSundays(list = sundaysData) {
             // 깊은 복사 (birthdays 배열까지)
-            const merged = sundaysData.map(s => ({
+            const merged = list.map(s => ({
                 ...s,
                 birthdays: [...s.birthdays]
             }));
 
             // 표시할 연도 (첫 주일에서 추출)
-            const year = parseInt(sundaysData[0].date.split('-')[0]);
+            const year = parseInt(list[0].date.split('-')[0]);
 
             for (const eb of extraBirthdays) {
                 let solarMonth, solarDay, birthdayStr;
@@ -1590,7 +1626,7 @@
                     birthdayStr = `${solarMonth}/${solarDay}(${dayName})`;
                 }
 
-                const targetSunday = findSundayWeekForDate(solarMonth, solarDay, year);
+                const targetSunday = findSundayWeekForDate(solarMonth, solarDay, year, list);
                 const found = merged.find(s => s.week === targetSunday.week);
                 if (found) {
                     found.birthdays.push({ id: eb.id, name: eb.name, birthday: birthdayStr });
