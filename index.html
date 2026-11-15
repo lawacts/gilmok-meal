@@ -1502,17 +1502,17 @@
             const today = getToday();
             const isUpcoming = s => new Date(s.date + 'T00:00:00') >= today;
 
-            // 오늘 이후의 주일 3개. 연말에는 내년 1월 주일을 이어서 보여줌
+            // 오늘 이후의 주일 4개. 연말에는 내년 1월 주일을 이어서 보여줌
             // (?year= 로 다른 해를 미리 보는 중에는 그 해 주일만 사용)
             let upcoming = displayData.filter(isUpcoming);
-            if (DISPLAY_YEAR === ACTUAL_YEAR && upcoming.length < 3) {
+            if (DISPLAY_YEAR === ACTUAL_YEAR && upcoming.length < 4) {
                 upcoming = upcoming.concat(getMergedSundays(nextSundaysData).filter(isUpcoming));
             }
-            upcoming = upcoming.slice(0, 3);
+            upcoming = upcoming.slice(0, 4);
             // 모든 주일이 오늘 이전이면 마지막 주일로
             if (!upcoming.length) upcoming = [displayData[displayData.length - 1]];
 
-            const [target, next, nextNext] = upcoming;
+            const [target, next, nextNext, third] = upcoming;
 
             // 이번 주일이 표시 연도면 해당 월로 스크롤, 내년이면 내년 달력으로 이동
             const gotoBtn = target.year === DISPLAY_YEAR
@@ -1531,7 +1531,7 @@
             `;
 
             const grid = section.querySelector('.weeks-grid');
-            [[target, '⭐ 이번 주일', ''], [next, '다음 주일', ' next'], [nextNext, '다다음 주일', ' next']].forEach(([sunday, label, cls]) => {
+            [[target, '⭐ 이번 주일', ''], [next, '다음 주일', ' next'], [nextNext, '다다음 주일', ' next'], [third, '3주 뒤 주일', ' next']].forEach(([sunday, label, cls]) => {
                 if (!sunday) return;
                 const card = createWeekCard(sunday, sunday.year === DISPLAY_YEAR ? 'top-' : 'topnext-');
                 if (sunday === target) card.classList.add('this-week-card');
