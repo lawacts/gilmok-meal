@@ -135,8 +135,42 @@
             border: 3px solid #667eea;
         }
 
-        .this-week-section .week-card {
-            max-width: 520px;
+        .this-week-section .month-title {
+            font-size: 1.15rem;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .this-week-section .month-icon {
+            flex-shrink: 0;
+        }
+
+        .week-tag {
+            display: inline-block;
+            margin-bottom: 10px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            background: #667eea;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .week-tag.next {
+            background: #9aa3c7;
+        }
+
+        .goto-month-btn {
+            margin-left: auto;
+            padding: 7px 12px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
         }
 
         .weeks-grid {
@@ -1420,18 +1454,29 @@
             today.setHours(0, 0, 0, 0);
 
             // 모든 주일이 오늘 이전이면 마지막 주일로
-            const target = displayData.find(s => new Date(s.date + 'T00:00:00') >= today)
-                || displayData[displayData.length - 1];
+            let idx = displayData.findIndex(s => new Date(s.date + 'T00:00:00') >= today);
+            if (idx === -1) idx = displayData.length - 1;
+            const target = displayData[idx];
+            const next = displayData[idx + 1]; // 연말에는 없을 수 있음
 
             const section = document.createElement('div');
             section.className = 'month-section this-week-section';
             section.innerHTML = `
                 <h2 class="month-title">
                     <span class="month-icon">📌</span>
-                    이번 주일
+                    ${next ? '이번 주 · 다음 주' : '이번 주일'}
+                    <button class="goto-month-btn" onclick="scrollToMonth(${target.month})">${monthNames[target.month]} 보기 ↓</button>
                 </h2>
+                <div class="weeks-grid"></div>
             `;
-            section.appendChild(createWeekCard(target, 'top-'));
+
+            const grid = section.querySelector('.weeks-grid');
+            [[target, '이번 주일', ''], [next, '다음 주일', ' next']].forEach(([sunday, label, cls]) => {
+                if (!sunday) return;
+                const card = createWeekCard(sunday, 'top-');
+                card.insertAdjacentHTML('afterbegin', `<div class="week-tag${cls}">${label}</div>`);
+                grid.appendChild(card);
+            });
             container.appendChild(section);
         }
 
