@@ -131,6 +131,14 @@
             font-weight: bold;
         }
 
+        .this-week-section {
+            border: 3px solid #667eea;
+        }
+
+        .this-week-section .week-card {
+            max-width: 520px;
+        }
+
         .weeks-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -749,6 +757,8 @@
             </div>
         </header>
 
+        <div id="thisWeek"></div>
+
         <div class="summary">
             <h2>
                 <span>📊 섬김 현황</span>
@@ -1066,17 +1076,12 @@
                 });
             });
 
+            renderThisWeek(displayData);
             updateStats();
 
             // 재렌더링 후 생일 표시 상태 재적용
             if (showBirthdays) {
                 document.querySelectorAll('.birthdays').forEach(el => el.classList.remove('hidden'));
-            }
-
-            // 첫 로드 시 오늘 날짜에 해당하는 주일로 자동 스크롤
-            if (isFirstRender) {
-                isFirstRender = false;
-                scrollToToday();
             }
         }
 
@@ -1096,10 +1101,11 @@
             return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')} 등록`;
         }
 
-        function createWeekCard(sunday) {
+        // idPrefix: 같은 주일 카드를 상단(이번 주일)에도 한 번 더 그릴 때 ID 중복 방지용
+        function createWeekCard(sunday, idPrefix = '') {
             const card = document.createElement('div');
             card.className = 'week-card';
-            card.id = `week-${sunday.week}`;
+            card.id = `${idPrefix}week-${sunday.week}`;
 
             const saved = servantData[String(sunday.week)];
             if (saved) {
@@ -1150,34 +1156,34 @@
                     ${birthdayHTML}
                     <div class="form-group">
                         <label>섬기는 분 이름</label>
-                        <input type="text" id="name-${sunday.week}" placeholder="이름을 입력하세요">
+                        <input type="text" id="${idPrefix}name-${sunday.week}" placeholder="이름을 입력하세요">
                     </div>
                     <div class="form-group">
                         <label>섬김 방법</label>
                         <div class="method-select">
                             <div class="method-option">
-                                <input type="radio" name="method-${sunday.week}" id="self-${sunday.week}" value="self">
-                                <label class="method-label" for="self-${sunday.week}">📦 본인준비</label>
+                                <input type="radio" name="${idPrefix}method-${sunday.week}" id="${idPrefix}self-${sunday.week}" value="self">
+                                <label class="method-label" for="${idPrefix}self-${sunday.week}">📦 본인준비</label>
                             </div>
                             <div class="method-option">
-                                <input type="radio" name="method-${sunday.week}" id="church-${sunday.week}" value="church">
-                                <label class="method-label" for="church-${sunday.week}">🏠 교회준비</label>
+                                <input type="radio" name="${idPrefix}method-${sunday.week}" id="${idPrefix}church-${sunday.week}" value="church">
+                                <label class="method-label" for="${idPrefix}church-${sunday.week}">🏠 교회준비</label>
                             </div>
                         </div>
                     </div>
-                    <button class="save-btn" onclick="saveServant(${sunday.week})">등록하기</button>
+                    <button class="save-btn" onclick="saveServant(${sunday.week}, '${idPrefix}')">등록하기</button>
                 `;
             }
 
             return card;
         }
 
-        async function saveServant(week) {
-            const nameInput = document.getElementById(`name-${week}`);
+        async function saveServant(week, idPrefix = '') {
+            const nameInput = document.getElementById(`${idPrefix}name-${week}`);
             const name = nameInput.value.trim();
-            
-            const selfRadio = document.getElementById(`self-${week}`);
-            const churchRadio = document.getElementById(`church-${week}`);
+
+            const selfRadio = document.getElementById(`${idPrefix}self-${week}`);
+            const churchRadio = document.getElementById(`${idPrefix}church-${week}`);
             
             if (!name) {
                 showToast('이름을 입력해주세요!', true);
@@ -1215,7 +1221,7 @@
             };
 
             // 버튼 비활성화
-            const btn = document.querySelector(`#week-${week} .save-btn`);
+            const btn = document.querySelector(`#${idPrefix}week-${week} .save-btn`);
             btn.disabled = true;
             btn.textContent = '저장 중...';
 
@@ -1404,37 +1410,29 @@
         // Firebase에서 불러온 추가 생일 데이터
         let extraBirthdays = [];
 
-        // 첫 렌더링 여부 (오늘 날짜로 자동 스크롤용)
-        let isFirstRender = true;
+        // 오늘 또는 가장 가까운 다음 주일 카드를 페이지 맨 위에 표시
+        function renderThisWeek(displayData) {
+            const container = document.getElementById('thisWeek');
+            container.innerHTML = '';
+            if (!displayData.length) return;
 
-        // 오늘 또는 가장 가까운 다음 주일로 스크롤
-        function scrollToToday() {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            let target = null;
-            for (const s of sundaysData) {
-                const sundayDate = new Date(s.date + 'T00:00:00');
-                if (sundayDate >= today) {
-                    target = s;
-                    break;
-                }
-            }
             // 모든 주일이 오늘 이전이면 마지막 주일로
-            if (!target) target = sundaysData[sundaysData.length - 1];
+            const target = displayData.find(s => new Date(s.date + 'T00:00:00') >= today)
+                || displayData[displayData.length - 1];
 
-            // 월 버튼 활성화 동기화
-            document.querySelectorAll('.month-btn').forEach((btn, idx) => {
-                btn.classList.toggle('active', idx + 1 === target.month);
-            });
-
-            // 카드로 스크롤 (DOM이 완전히 그려진 후)
-            setTimeout(() => {
-                const card = document.getElementById(`week-${target.week}`);
-                if (card) {
-                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }, 200);
+            const section = document.createElement('div');
+            section.className = 'month-section this-week-section';
+            section.innerHTML = `
+                <h2 class="month-title">
+                    <span class="month-icon">📌</span>
+                    이번 주일
+                </h2>
+            `;
+            section.appendChild(createWeekCard(target, 'top-'));
+            container.appendChild(section);
         }
 
         // Firebase 생일 컬렉션 실시간 리스너
